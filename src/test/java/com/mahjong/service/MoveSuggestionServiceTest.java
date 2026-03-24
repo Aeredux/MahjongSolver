@@ -142,12 +142,13 @@ class MoveSuggestionServiceTest {
 
     @Test
     void testExplainMove() {
+        // Tenpai hand: 3 melds + 1 pair + 1 incomplete sequence
         List<Tile> hand = Arrays.asList(
             new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
             new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
-            new Tile(TileType.M7), new Tile(TileType.M8), new Tile(TileType.M9),
+            new Tile(TileType.M7), new Tile(TileType.M8),
             new Tile(TileType.P1), new Tile(TileType.P1), new Tile(TileType.P1),
-            new Tile(TileType.S5), new Tile(TileType.S6)
+            new Tile(TileType.S5), new Tile(TileType.S6), new Tile(TileType.S7)
         );
 
         MoveSuggestion bestMove = suggestionService.getBestMove(hand);
@@ -157,6 +158,8 @@ class MoveSuggestionServiceTest {
         assertFalse(explanation.isEmpty());
         assertTrue(explanation.contains("Discard"));
         assertTrue(explanation.contains("Shanten"));
+        // Should maintain tenpai (shanten 0)
+        assertTrue(explanation.contains("Shanten = 0") || explanation.contains("shanten = 0"));
     }
 
     @Test
