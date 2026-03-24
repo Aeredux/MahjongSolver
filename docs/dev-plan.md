@@ -35,16 +35,17 @@
 - [x] Set up Spring Boot project structure
 - [x] Implement tile models (suits, honors, winds, dragons)
 - [x] Create game state data structures
-- [ ] Build rule engine for Japanese Riichi Mahjong
+- [x] Build rule engine for Japanese Riichi Mahjong (basic AI complete)
   - [x] Hand analysis utilities (sorting, grouping, winning hand detection)
   - [x] Shanten calculation and move suggestion service
-  - [ ] Legal move validation
-  - [ ] Winning condition detection (Ron, Tsumo)
-  - [ ] Hand value calculation
-  - [ ] Yaku recognition
+  - [ ] Call decision logic (pon/chi/kan/ron/riichi evaluation) - needed for FF14 plugin
+  - [ ] Legal move validation (deferred - not needed for basic AI)
+  - [ ] Winning condition detection (Ron, Tsumo) (deferred - not needed for basic AI)
+  - [ ] Hand value calculation (deferred - advanced feature)
+  - [ ] Yaku recognition (deferred - advanced feature)
 - [x] Implement wall/deck management
 - [x] Dora indicator handling
-- [ ] Unit tests for game rules and validation
+- [x] Unit tests for game rules and validation (basic AI components tested)
 
 **Dependencies**: None
 
