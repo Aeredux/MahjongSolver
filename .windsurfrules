@@ -1,0 +1,37 @@
+# Project Rules and Context
+
+## Project Overview
+Mahjong application with AI-powered move suggestions via REST API and web-based visualization.
+- **Primary Use Case**: FF14 plugin integration for Japanese Riichi Mahjong move suggestions
+- **Core Features**: 
+  - REST API endpoint accepting game state, returning optimal move suggestions
+  - Localhost web interface for visualizing game states
+  - Game history and API call tracking
+- **Full Design**: See docs/application-design.md for complete architecture
+
+## Coding Standards
+- Follow common design patterns (MVC, Repository, Service layers, etc.)
+- Choose appropriate frameworks (Spring Boot for REST API, etc.)
+- Include good logging throughout the application
+- Use Java naming conventions and best practices
+- Write unit tests for core game logic
+
+## Architecture Notes
+- **Mahjong Variant**: Japanese Riichi (primary focus)
+- **AI Complexity**: Basic shanten minimization (advanced strategies deferred)
+- **Multiplayer**: Not implemented initially
+- **API Rate Limiting**: ~5 requests/second (adjust based on performance)
+- **Persistence**: Store game history and API call logs; no user accounts for now
+- **Technology Stack**: Java + Spring Boot backend, React/Vue.js or vanilla JS frontend
+
+## Important Conventions
+- API responses should include move suggestions with confidence scores and reasoning
+- Game state serialization uses JSON format
+- Visualization should clearly highlight suggested moves
+- Log all API calls for debugging and history tracking
+
+
+## Agent instructions
+1. When coding, do not make any assumptions and ask me/the user any clarifying questions if needed.
+2. If carrying out a multi-phase task, do git commit after finishing each phase.
+3. Any changes should be documented in a dev journey md file.
