@@ -4,6 +4,35 @@ This document tracks the development progress, decisions, and changes made durin
 
 ## 2026-03-24
 
+### Bug Fix: Shanten and Ukeire Calculation (Phase 6 debugging)
+**Status**: Fixed
+**Date**: 2026-03-24
+
+Three inter-related bugs found while testing the hand S1-S9 + M2M3 + WWW:
+
+#### Bug 1: No-pair tatsu cap (3 melds + 2 tatsu + no pair = 0-shanten incorrectly)
+**Root Cause**: `calculateShantenWithoutPair` and the `hasPair=false` base case in `calculateMeldFormation` both applied the formula `max(0, 8 - 2*melds - tatsu)` using the raw `tatsu` value, even when `melds + tatsu` exceeded the 4-group limit. For a hand with 3 complete melds + 2 partial sequences + no pair, the formula gave `max(0, 8-6-2) = 0` instead of the correct 1.
+
+**Fix**: Cap tatsu at `min(tatsu, 4 - melds)` before applying the formula in both early-return sites. A standard win requires 4 melds + 1 pair; excess partial sequences beyond 4 total groups cannot be used.
+
+**Test updates**: `testOneShantenHand` and `testTwoShantenHand` had expected values of 0 that relied on the bug — corrected to 1. Added regression test `testThreeMeldsNoPairIsOneShantenNotTenpai` covering the user-reported hand.
+
+#### Bug 2: Ryanmen not detected for value-8 tiles (S8S9, P8P9, M8M9)
+**Root Cause**: The sequence-forming block in `calculateMeldFormation` was gated by `firstType.getValue() <= 7`, which blocked ryanmen detection for S8S9 (S8 starts at value 8). After discarding S7, the S8S9 stub was silently discarded as two isolated tiles instead of being counted as a tatsu. This caused discard-S7 to show worse (and asymmetric) ukeire compared to the mirror discard-S3.
+
+**Fix**: Moved the ryanmen check outside the `value <= 7` gate (ryanmen only needs +1, valid up to value 8). Complete sequence and kanchan remain gated at `value <= 7` (both need +2).
+
+**Result**: All 113 tests pass. S3 and S7 discards now produce symmetric ukeire counts as expected.
+
+#### Tile sprite padding (frontend)
+**Root Cause**: The sprite sheet CSS used the formula `bgSize = NCOLS*100% / NROWS*100%` assuming zero padding, but each cell has ~8% blue border on each side from the shadow/frame art. Tiles appeared smaller than needed.
+
+**Fix**: Added `TILE_PAD = 0.08` constant in `Tile.tsx` and applied corrected formulas:
+- `bgSizeX = NCOLS / (1 - 2*P) * 100%`
+- `bgPosX = 100 * (col + P) / (NCOLS - 1 + 2*P) %` (derived from CSS background-position percentage math)
+
+---
+
 ### Design: Discard-Aware Tile Efficiency
 **Status**: Documented (implementation deferred)
 
