@@ -155,6 +155,12 @@ public class MahjongController {
         }
     }
 
+    @GetMapping("/history")
+    @Operation(summary = "Game history", description = "Returns all past move suggestion requests")
+    public ResponseEntity<List<com.mahjong.entity.GameHistory>> getHistory() {
+        return ResponseEntity.ok(gameHistoryService.findAll());
+    }
+
     @GetMapping("/health")
     @Operation(summary = "Health check", description = "Returns service health status")
     public ResponseEntity<String> health() {

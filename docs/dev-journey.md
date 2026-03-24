@@ -23,6 +23,40 @@ This document tracks the development progress, decisions, and changes made durin
 - Added Phase 4 task to update the `POST /api/suggest-move` DTO to accept `DiscardedTile[]` per player
 - Added decision log entry for 2026-03-24
 
+### Phase 5: Web Visualization (React Frontend)
+**Status**: Complete
+**Date**: 2026-03-24
+
+**Decisions**:
+- Chose React (over Vue) for better TypeScript support, larger ecosystem, and shadcn/ui compatibility
+- Used Vite as build tool (fast HMR, ESM-first, minimal config)
+- Node.js installed via `winget` (v24.14.0)
+- Build output directed to `src/main/resources/static` so Spring Boot serves the app at `localhost:8080`
+- During dev: Vite dev server at `localhost:3000` proxies `/api` calls to Spring Boot at `localhost:8080`
+
+**Frontend structure** (`frontend/`):
+- `src/types/mahjong.ts` — All TypeScript types: `TileType`, `TILE_SPRITE_POSITIONS` (sprite sheet coords), `TILE_GROUPS` (suit groupings), `TILE_DISPLAY_NAMES`, `MoveSuggestionResponse`, `GameHistoryEntry`
+- `src/lib/utils.ts` — `cn()` utility using `clsx` + `tailwind-merge`
+- `src/components/ui/` — lightweight shadcn-style components: `Button`, `Card`, `Badge`
+- `src/components/Tile.tsx` — renders a single tile from the 10×4 sprite sheet using CSS `background-position` percentages (works at any resolution)
+- `src/components/TileRow.tsx` — renders a sequence of tiles with optional highlight
+- `src/components/HandInput.tsx` — interactive tile picker grouped by suit; click to add, hover to remove, click again to mark drawn tile; per-tile count badge (max 4); Reset and Get Suggestions buttons
+- `src/components/MoveSuggestions.tsx` — ranked suggestion list; top suggestion highlighted with trophy; confidence progress bar (color-coded green/amber/orange/gray); ukeire count; reasoning text; shanten badge
+- `src/components/GameHistory.tsx` — fetches `GET /api/history`, shows all past requests with hand, drawn tile, best discard, confidence, and timestamp; Refresh button
+- `src/App.tsx` — two-tab layout (Suggest Move / History); two-column grid on large screens; sticky header
+
+**Backend addition**:
+- Added `GET /api/history` endpoint to `MahjongController` returning all `GameHistory` records sorted by most recent
+
+**Tile sprite mapping**:
+- Sprite sheet is 10 cols × 4 rows: Man (row 0), Pin (row 1), Sou (row 2), Honors (row 3)
+- 5m/5p/5s at col 4; red variants at col 5 (mapped but not in TileType enum yet); 6-9 at cols 6-9
+- EAST=col0, SOUTH=col1, WEST=col2, NORTH=col3, WHITE=col4, GREEN=col5, RED=col6
+
+**Build**: `npm run build` → outputs to `src/main/resources/static/` (index.html + assets); 79KB gzipped JS
+
+---
+
 ### Phase 3: Database & Persistence
 **Status**: Complete
 **Date**: 2026-03-24

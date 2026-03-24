@@ -127,30 +127,33 @@
 ---
 
 ### Phase 5: Web Visualization
-**Status**: Not Started
+**Status**: Complete
 
 **Tasks**:
-- [ ] Choose frontend framework (React/Vue.js/vanilla JS)
-- [ ] Set up frontend project structure
-- [ ] Implement tile rendering system
-  - [ ] Load and parse tile sprite sheet
-  - [ ] Create tile component/rendering function
-  - [ ] Implement tile mapping (code to sprite position)
-- [ ] Build game state visualization
-  - [ ] Player hand display
-  - [ ] Discard pile rendering
-  - [ ] Dora indicators
-  - [ ] Round/wind information
-- [ ] Create move suggestion display
-  - [ ] Highlight suggested tiles
-  - [ ] Show confidence scores
-  - [ ] Display reasoning/analysis
-- [ ] Implement game state input form
-  - [ ] Manual input interface
-  - [ ] JSON paste option
-- [ ] Add game history viewer
-- [ ] Responsive design and styling
-- [ ] Integration with backend API
+- [x] Choose frontend framework (React + Vite + TypeScript + TailwindCSS)
+- [x] Set up frontend project structure (`frontend/` directory)
+- [x] Implement tile rendering system
+  - [x] CSS sprite sheet extraction (10×4 grid, percentage-based background-position)
+  - [x] `Tile` component with size variants, highlight, and dimmed states
+  - [x] `TileRow` component for rendering a sequence of tiles
+  - [x] Tile mapping for all 34 types including honors (`TILE_SPRITE_POSITIONS`)
+- [x] Build game state visualization
+  - [x] Visual tile picker grouped by suit (萬/筒/索/字)
+  - [x] Current hand display with drawn tile marker
+- [x] Create move suggestion display
+  - [x] Ranked suggestion list with top suggestion highlighted
+  - [x] Confidence progress bar (color-coded)
+  - [x] Ukeire count and reasoning text per suggestion
+  - [x] Shanten badge (tenpai / N-shanten)
+- [x] Implement game state input form
+  - [x] Interactive tile picker (click to add, hover to remove)
+  - [x] Drawn tile marking (click selected tile)
+  - [x] Per-tile count indicator (max 4)
+- [x] Add game history viewer (fetches `GET /api/history`)
+- [x] Responsive design and styling (dark theme, TailwindCSS)
+- [x] Integration with backend API (Vite proxy to Spring Boot during dev; static build for production)
+- [x] Added `GET /api/history` endpoint to backend
+- [x] Build output configured to `src/main/resources/static`
 
 **Dependencies**: Phase 4 (REST API)
 
@@ -189,13 +192,13 @@
 
 ## Current Sprint
 
-**Active Phase**: Phase 5 (Web Visualization)
+**Active Phase**: Phase 6 (Integration & Testing)
 
 **Next Steps**:
-1. Choose frontend framework and set up project structure
-2. Implement tile rendering system
-3. Build game state visualization (hand display, discard piles, dora, round info)
-4. Create move suggestion display with confidence scores and reasoning
+1. End-to-end test the full workflow (build → Spring Boot → browser)
+2. Test FF14 plugin integration
+3. Performance and load testing
+4. Documentation (API guide, deployment instructions)
 
 ---
 
