@@ -38,7 +38,7 @@
 - [x] Build rule engine for Japanese Riichi Mahjong (basic AI complete)
   - [x] Hand analysis utilities (sorting, grouping, winning hand detection)
   - [x] Shanten calculation and move suggestion service
-  - [ ] Call decision logic (pon/chi/kan/ron/riichi evaluation) - needed for FF14 plugin
+  - [x] Call decision logic (pon/chi/kan/ron/riichi evaluation)
   - [ ] Legal move validation (deferred - not needed for basic AI)
   - [ ] Winning condition detection (Ron, Tsumo) (deferred - not needed for basic AI)
   - [ ] Hand value calculation (deferred - advanced feature)

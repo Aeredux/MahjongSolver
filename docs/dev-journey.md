@@ -237,3 +237,41 @@ This document tracks the development progress, decisions, and changes made durin
   - Test suggestion sorting by quality
   - Test null hand handling
 
+#### Task: Implement call decision service
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created `CallType` enum (CHI, PON, KAN, RON, RIICHI, TSUMO)
+- Created `CallDecision` model class:
+  - callType: Type of call being evaluated
+  - shouldCall: Boolean recommendation
+  - confidence: Confidence score (0.0-1.0)
+  - reasoning: Human-readable explanation
+  - shantenBefore/shantenAfter: Shanten change tracking
+- Created `CallDecisionService` for evaluating call actions:
+  - evaluateRon(): Checks if hand wins with called tile
+  - evaluateTsumo(): Checks if hand is complete for self-draw win
+  - evaluateRiichi(): Validates riichi conditions (menzen, tenpai, score >= 1000)
+  - evaluatePon(): Evaluates pon based on shanten improvement
+  - evaluateChi(): Evaluates chi based on shanten improvement and sequence validity
+  - evaluateKan(): Evaluates kan based on hand strength (recommended at tenpai/1-shanten)
+- Decision logic:
+  - Ron/Tsumo: Always call if winning hand detected
+  - Riichi: Call if hand is tenpai, closed, and has sufficient score
+  - Pon/Chi: Recommend if maintains or improves shanten
+  - Kan: Recommend if hand is close to winning (for dora bonus)
+- Reasoning generation includes:
+  - Validation checks (sufficient tiles, valid sequences, etc.)
+  - Shanten impact analysis
+  - Strategic considerations (menzen loss, dora opportunities)
+- Created comprehensive unit tests in `CallDecisionServiceTest`:
+  - Test ron with winning/non-winning hands
+  - Test tsumo with winning hand
+  - Test riichi with tenpai/non-tenpai hands
+  - Test riichi validation (open hand, insufficient score)
+  - Test pon with sufficient/insufficient tiles
+  - Test chi with valid sequences and honor tiles
+  - Test kan with sufficient/insufficient tiles
+
