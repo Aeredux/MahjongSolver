@@ -34,7 +34,7 @@
 **Tasks**:
 - [x] Set up Spring Boot project structure
 - [x] Implement tile models (suits, honors, winds, dragons)
-- [ ] Create game state data structures
+- [x] Create game state data structures
 - [ ] Build rule engine for Japanese Riichi Mahjong
   - [ ] Legal move validation
   - [ ] Winning condition detection (Ron, Tsumo)

@@ -64,3 +64,35 @@ This document tracks the development progress, decisions, and changes made durin
   - Test terminalOrHonor detection
   - Test toString() output
 
+#### Task: Create game state data structures
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created `Wind` enum with:
+  - Four wind directions (EAST, SOUTH, WEST, NORTH)
+  - next() and previous() methods for rotation
+  - toTileType() conversion method
+- Created `MeldType` enum (CHI, PON, KAN_OPEN, KAN_CLOSED, KAN_ADDED)
+- Created `Meld` class with:
+  - Type, tiles list, and calledFrom wind
+  - isOpen(), isClosed(), isKan() helper methods
+- Created `Player` class with:
+  - Wind position, hand, discards, melds, riichi status, score
+  - drawnTile field for current draw
+  - getHandSize() and getAllHandTiles() methods
+  - hasOpenMelds() and isMenzen() (closed hand) detection
+  - Default score of 25000 points
+- Created `GameState` class with:
+  - Game ID, round wind, round number, honba/riichi sticks
+  - Players map (by Wind), current player tracking
+  - Wall, dead wall, dora indicators, ura-dora indicators
+  - Wall index for tracking draw position
+  - Helper methods: getCurrentPlayer(), getPlayer(), nextPlayer()
+  - getTilesRemaining(), isWallEmpty(), getVisibleDoraIndicators()
+- Created comprehensive unit tests:
+  - `WindTest`: Test wind rotation and tile conversion
+  - `PlayerTest`: Test player state, hand size, melds, menzen detection
+  - `GameStateTest`: Test game initialization, player rotation, wall tracking
+
