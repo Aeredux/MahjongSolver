@@ -87,13 +87,13 @@ public class ShantenCalculator {
     }
     
     private int calculateShantenWithPair(Map<TileType, Integer> tiles, int melds, int tatsu) {
+        int effectiveTatsu = Math.min(tatsu, 4 - melds);
         if (tiles.isEmpty()) {
-            return 8 - melds * 2 - tatsu - 1;
+            return 8 - melds * 2 - effectiveTatsu - 1;
         }
         
         if (melds + tatsu >= 4) {
-            // We have 4 groups already, calculate shanten
-            return 8 - melds * 2 - tatsu - 1;
+            return 8 - melds * 2 - effectiveTatsu - 1;
         }
         
         return calculateMeldFormation(tiles, melds, tatsu, true);
