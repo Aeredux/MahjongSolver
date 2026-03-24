@@ -33,5 +33,5 @@ Mahjong application with AI-powered move suggestions via REST API and web-based 
 
 ## Agent instructions
 1. When coding, do not make any assumptions and ask me/the user any clarifying questions if needed.
-2. If carrying out a multi-phase task, do git commit after finishing each phase.
+2. Git commit after completing each checkbox task in the dev plan (docs/dev-plan.md).
 3. Any changes should be documented in a dev journey md file.
