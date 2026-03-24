@@ -37,7 +37,7 @@
 - [x] Create game state data structures
 - [ ] Build rule engine for Japanese Riichi Mahjong
   - [x] Hand analysis utilities (sorting, grouping, winning hand detection)
-  - [x] Shanten calculation
+  - [x] Shanten calculation and move suggestion service
   - [ ] Legal move validation
   - [ ] Winning condition detection (Ron, Tsumo)
   - [ ] Hand value calculation

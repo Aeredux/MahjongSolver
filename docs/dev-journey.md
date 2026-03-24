@@ -193,3 +193,47 @@ This document tracks the development progress, decisions, and changes made durin
   - Test edge cases (empty hand, all pairs)
   - Test isTenpai() helper method
 
+#### Task: Implement move suggestion service
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created `MoveSuggestion` model class:
+  - discardTile: Tile to discard
+  - shantenAfterDiscard: Resulting shanten value
+  - confidence: Confidence score (0.0-1.0)
+  - reasoning: Human-readable explanation
+  - ukeireCount: Number of useful tiles remaining
+- Created `MoveSuggestionService` for AI move recommendations:
+  - suggestMoves(): Generates all possible moves with rankings
+  - getBestMove(): Returns single best move suggestion
+  - getTopMoves(): Returns top N move suggestions
+  - calculateUkeire(): Counts tiles that improve hand after discard
+  - calculateConfidence(): Scores move quality (1.0 = improves shanten, 0.5 = maintains, 0.0 = worsens)
+  - generateReasoning(): Creates human-readable explanation
+  - explainMove(): Formats move suggestion as text
+- Move ranking algorithm:
+  - Primary: Lowest shanten after discard
+  - Secondary: Highest ukeire count
+  - Tertiary: Highest confidence score
+- Ukeire calculation:
+  - Tests all 34 tile types
+  - Counts remaining tiles that improve shanten
+  - Accounts for tiles already in hand
+- Reasoning includes:
+  - Shanten change (improves/maintains/worsens)
+  - Ukeire count and percentage
+  - Terminal/honor tile safety notes
+- Created comprehensive unit tests in `MoveSuggestionServiceTest`:
+  - Test move suggestions for tenpai hands
+  - Test move suggestions for 1-shanten hands
+  - Test getBestMove() functionality
+  - Test getTopMoves() with limit
+  - Test empty hand handling
+  - Test reasoning generation
+  - Test confidence scoring
+  - Test move explanation formatting
+  - Test suggestion sorting by quality
+  - Test null hand handling
+
