@@ -96,3 +96,34 @@ This document tracks the development progress, decisions, and changes made durin
   - `PlayerTest`: Test player state, hand size, melds, menzen detection
   - `GameStateTest`: Test game initialization, player rotation, wall tracking
 
+#### Task: Implement wall/deck management
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created `WallService` with comprehensive wall management:
+  - initializeWall(): Creates full 136-tile set with shuffling
+  - createFullTileSet(): Generates all tiles including 3 red 5s (one per suit)
+  - setupDeadWall(): Reserves 14 tiles for dead wall
+  - dealInitialHands(): Deals 13 tiles to each of 4 players
+  - drawTileFromWall(): Draws tiles with wall exhaustion checking
+  - drawReplacementTile(): Draws from dead wall for kan replacements
+  - revealNextDoraIndicator(): Reveals additional dora (up to 5)
+  - getActualDoraTiles(): Converts dora indicators to actual dora tiles
+  - getNextTile(): Helper for dora rotation logic
+- Dead wall structure:
+  - 14 tiles reserved at end of wall
+  - 5 dora indicators (positions 4, 3, 2, 1, 0)
+  - 5 ura-dora indicators (positions 9, 8, 7, 6, 5)
+  - Remaining tiles for kan replacements
+- Logging throughout for debugging
+- Created comprehensive unit tests in `WallServiceTest`:
+  - Test wall initialization (136 tiles, dead wall, dora setup)
+  - Test initial hand dealing (13 tiles per player)
+  - Test tile drawing and wall exhaustion
+  - Test replacement tile drawing
+  - Test dora indicator revealing (up to 5 max)
+  - Test red tile distribution (3 red 5s)
+  - Test tile type distribution (4 of each type)
+

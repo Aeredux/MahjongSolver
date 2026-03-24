@@ -40,8 +40,8 @@
   - [ ] Winning condition detection (Ron, Tsumo)
   - [ ] Hand value calculation
   - [ ] Yaku recognition
-- [ ] Implement wall/deck management
-- [ ] Dora indicator handling
+- [x] Implement wall/deck management
+- [x] Dora indicator handling
 - [ ] Unit tests for game rules and validation
 
 **Dependencies**: None
