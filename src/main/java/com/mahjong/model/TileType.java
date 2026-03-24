@@ -74,4 +74,8 @@ public enum TileType {
     public boolean isSimple() {
         return !isTerminal() && !isHonor();
     }
+
+    public boolean isTerminalOrHonor() {
+        return isTerminal() || isHonor();
+    }
 }

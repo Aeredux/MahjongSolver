@@ -37,6 +37,7 @@ public class ShantenCalculator {
         
         int minShanten = MAX_SHANTEN;
         
+        // Try with each possible pair
         for (TileType pairType : TileType.values()) {
             if (counts.getOrDefault(pairType, 0) >= 2) {
                 Map<TileType, Integer> remaining = new HashMap<>(counts);
@@ -45,15 +46,28 @@ public class ShantenCalculator {
                     remaining.remove(pairType);
                 }
                 
-                int shanten = calculateShantenWithoutPair(remaining, 0, 0);
+                int shanten = calculateShantenWithPair(remaining, 0, 0);
                 minShanten = Math.min(minShanten, shanten);
             }
         }
         
+        // Try without a pair
         int shantenNoPair = calculateShantenWithoutPair(counts, 0, 0);
-        minShanten = Math.min(minShanten, shantenNoPair + 1);
+        minShanten = Math.min(minShanten, shantenNoPair);
         
         return minShanten;
+    }
+    
+    private int calculateShantenWithPair(Map<TileType, Integer> tiles, int melds, int tatsu) {
+        if (tiles.isEmpty()) {
+            return 8 - melds * 2 - tatsu - 1;
+        }
+        
+        if (melds + tatsu >= 4) {
+            return 8 - melds * 2 - tatsu - 1;
+        }
+        
+        return calculateMeldFormation(tiles, melds, tatsu, true);
     }
 
     private int calculateShantenWithoutPair(Map<TileType, Integer> tiles, int melds, int tatsu) {
@@ -65,39 +79,56 @@ public class ShantenCalculator {
             return 8 - melds * 2 - tatsu;
         }
         
+        return calculateMeldFormation(tiles, melds, tatsu, false);
+    }
+    
+    private int calculateMeldFormation(Map<TileType, Integer> tiles, int melds, int tatsu, boolean hasPair) {
+        if (tiles.isEmpty()) {
+            return hasPair ? (8 - melds * 2 - tatsu - 1) : (8 - melds * 2 - tatsu);
+        }
+        
+        int maxGroups = hasPair ? 4 : 5;
+        if (melds + tatsu >= maxGroups) {
+            return hasPair ? (8 - melds * 2 - tatsu - 1) : (8 - melds * 2 - tatsu);
+        }
+        
         TileType firstType = tiles.keySet().stream()
             .min(Comparator.comparing(TileType::getSuit).thenComparing(TileType::getValue))
             .orElse(null);
         
         if (firstType == null) {
-            return 8 - melds * 2 - tatsu;
+            return hasPair ? (8 - melds * 2 - tatsu - 1) : (8 - melds * 2 - tatsu);
         }
         
         int count = tiles.get(firstType);
         int minShanten = MAX_SHANTEN;
         
+        // Try forming a triplet
         if (count >= 3) {
             Map<TileType, Integer> afterTriplet = new HashMap<>(tiles);
             afterTriplet.merge(firstType, -3, Integer::sum);
             if (afterTriplet.get(firstType) == 0) {
                 afterTriplet.remove(firstType);
             }
-            minShanten = Math.min(minShanten, calculateShantenWithoutPair(afterTriplet, melds + 1, tatsu));
+            minShanten = Math.min(minShanten, calculateMeldFormation(afterTriplet, melds + 1, tatsu, hasPair));
         }
         
+        // Try forming a pair (tatsu)
         if (count >= 2) {
             Map<TileType, Integer> afterPair = new HashMap<>(tiles);
             afterPair.merge(firstType, -2, Integer::sum);
             if (afterPair.get(firstType) == 0) {
                 afterPair.remove(firstType);
             }
-            minShanten = Math.min(minShanten, calculateShantenWithoutPair(afterPair, melds, tatsu + 1));
+            minShanten = Math.min(minShanten, calculateMeldFormation(afterPair, melds, tatsu + 1, hasPair));
         }
         
+        // Try forming sequences (only for suited tiles)
         if (firstType.getSuit() != TileSuit.HONOR && firstType.getValue() <= 7) {
             TileType next1 = getNextTileType(firstType);
             TileType next2 = getNextTileType(next1);
             
+            // Complete sequence
             if (next1 != null && next2 != null && tiles.containsKey(next1) && tiles.containsKey(next2)) {
                 Map<TileType, Integer> afterSequence = new HashMap<>(tiles);
                 afterSequence.merge(firstType, -1, Integer::sum);
@@ -108,9 +139,10 @@ public class ShantenCalculator {
                 if (afterSequence.get(next1) == 0) afterSequence.remove(next1);
                 if (afterSequence.get(next2) == 0) afterSequence.remove(next2);
                 
-                minShanten = Math.min(minShanten, calculateShantenWithoutPair(afterSequence, melds + 1, tatsu));
+                minShanten = Math.min(minShanten, calculateMeldFormation(afterSequence, melds + 1, tatsu, hasPair));
             }
             
+            // Ryanmen (two consecutive tiles)
             if (next1 != null && tiles.containsKey(next1)) {
                 Map<TileType, Integer> afterRyanmen = new HashMap<>(tiles);
                 afterRyanmen.merge(firstType, -1, Integer::sum);
@@ -119,9 +151,10 @@ public class ShantenCalculator {
                 if (afterRyanmen.get(firstType) == 0) afterRyanmen.remove(firstType);
                 if (afterRyanmen.get(next1) == 0) afterRyanmen.remove(next1);
                 
-                minShanten = Math.min(minShanten, calculateShantenWithoutPair(afterRyanmen, melds, tatsu + 1));
+                minShanten = Math.min(minShanten, calculateMeldFormation(afterRyanmen, melds, tatsu + 1, hasPair));
             }
             
+            // Kanchan (tiles with one gap)
             if (next2 != null && tiles.containsKey(next2)) {
                 Map<TileType, Integer> afterKanchan = new HashMap<>(tiles);
                 afterKanchan.merge(firstType, -1, Integer::sum);
@@ -130,16 +163,17 @@ public class ShantenCalculator {
                 if (afterKanchan.get(firstType) == 0) afterKanchan.remove(firstType);
                 if (afterKanchan.get(next2) == 0) afterKanchan.remove(next2);
                 
-                minShanten = Math.min(minShanten, calculateShantenWithoutPair(afterKanchan, melds, tatsu + 1));
+                minShanten = Math.min(minShanten, calculateMeldFormation(afterKanchan, melds, tatsu + 1, hasPair));
             }
         }
         
+        // Discard this tile
         Map<TileType, Integer> afterDiscard = new HashMap<>(tiles);
         afterDiscard.merge(firstType, -1, Integer::sum);
         if (afterDiscard.get(firstType) == 0) {
             afterDiscard.remove(firstType);
         }
-        minShanten = Math.min(minShanten, calculateShantenWithoutPair(afterDiscard, melds, tatsu));
+        minShanten = Math.min(minShanten, calculateMeldFormation(afterDiscard, melds, tatsu, hasPair));
         
         return minShanten;
     }
@@ -185,10 +219,7 @@ public class ShantenCalculator {
             }
         }
         
-        int shanten = 13 - uniqueTerminals;
-        if (!hasPair) {
-            shanten--;
-        }
+        int shanten = 13 - uniqueTerminals - (hasPair ? 1 : 0);
         
         return shanten;
     }

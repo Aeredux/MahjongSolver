@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.mahjong.service.MoveSuggestionServiceTest
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.018 s -- in com.mahjong.service.MoveSuggestionServiceTest

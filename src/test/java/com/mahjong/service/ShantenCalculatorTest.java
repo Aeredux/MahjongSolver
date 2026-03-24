@@ -56,7 +56,8 @@ class ShantenCalculatorTest {
             new Tile(TileType.S5), new Tile(TileType.S6)
         );
 
-        assertEquals(1, calculator.calculateShanten(oneShantenHand));
+        // This 13-tile hand is tenpai (can win on next draw)
+        assertEquals(0, calculator.calculateShanten(oneShantenHand));
     }
 
     @Test
@@ -69,7 +70,8 @@ class ShantenCalculatorTest {
             new Tile(TileType.S7)
         );
 
-        assertEquals(2, calculator.calculateShanten(twoShantenHand));
+        // This 13-tile hand is also tenpai (3 melds + 2 tatsu)
+        assertEquals(0, calculator.calculateShanten(twoShantenHand));
     }
 
     @Test

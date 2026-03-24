@@ -181,7 +181,14 @@ public class HandAnalyzer {
             return true;
         }
         
-        TileType firstType = tiles.keySet().iterator().next();
+        TileType firstType = tiles.keySet().stream()
+            .min(Comparator.comparing(TileType::getSuit).thenComparing(TileType::getValue))
+            .orElse(null);
+        
+        if (firstType == null) {
+            return false;
+        }
+        
         int count = tiles.get(firstType);
         
         if (count >= 3) {
