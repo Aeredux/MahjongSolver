@@ -29,10 +29,10 @@
 ## Development Phases
 
 ### Phase 1: Core Game Engine
-**Status**: Not Started
+**Status**: In Progress
 
 **Tasks**:
-- [ ] Set up Spring Boot project structure
+- [x] Set up Spring Boot project structure
 - [ ] Implement tile models (suits, honors, winds, dragons)
 - [ ] Create game state data structures
 - [ ] Build rule engine for Japanese Riichi Mahjong
