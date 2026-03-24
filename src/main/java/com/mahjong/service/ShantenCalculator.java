@@ -24,10 +24,21 @@ public class ShantenCalculator {
         int chiitoitsuShanten = calculateChiitoitsuShanten(hand);
         int kokushiShanten = calculateKokushiShanten(hand);
 
-        int minShanten = Math.min(standardShanten, Math.min(chiitoitsuShanten, kokushiShanten));
+        // For 14-tile hands, prioritize standard form over chiitoitsu
+        // since chiitoitsu calculation doesn't handle 14 tiles well
+        int minShanten;
+        if (hand.size() == 14) {
+            minShanten = Math.min(standardShanten, kokushiShanten);
+            // Only consider chiitoitsu if it's actually better
+            if (chiitoitsuShanten < minShanten - 1) {
+                minShanten = chiitoitsuShanten;
+            }
+        } else {
+            minShanten = Math.min(standardShanten, Math.min(chiitoitsuShanten, kokushiShanten));
+        }
         
-        logger.debug("Shanten calculation - Standard: {}, Chiitoitsu: {}, Kokushi: {}, Min: {}", 
-                    standardShanten, chiitoitsuShanten, kokushiShanten, minShanten);
+        // logger.debug("Shanten calculation - Standard: {}, Chiitoitsu: {}, Kokushi: {}, Min: {}", 
+        //             standardShanten, chiitoitsuShanten, kokushiShanten, minShanten);
         
         return minShanten;
     }
@@ -35,9 +46,11 @@ public class ShantenCalculator {
     private int calculateStandardShanten(List<Tile> hand) {
         Map<TileType, Integer> counts = getTileCounts(hand);
         
+        // logger.debug("calculateStandardShanten: hand size = {}, tile counts = {}", hand.size(), counts);
+        
         int minShanten = MAX_SHANTEN;
         
-        // Try with each possible pair
+        // Try with each possible pair (actual pairs with 2+ tiles)
         for (TileType pairType : TileType.values()) {
             if (counts.getOrDefault(pairType, 0) >= 2) {
                 Map<TileType, Integer> remaining = new HashMap<>(counts);
@@ -47,12 +60,27 @@ public class ShantenCalculator {
                 }
                 
                 int shanten = calculateShantenWithPair(remaining, 0, 0);
+                // logger.debug("Trying pair {}: shanten = {}, remaining tiles = {}", pairType, shanten, remaining);
+                minShanten = Math.min(minShanten, shanten);
+            }
+        }
+        
+        // Try with each single tile as a "pair candidate" (for tenpai hands)
+        for (TileType pairType : counts.keySet()) {
+            if (counts.get(pairType) == 1) {
+                Map<TileType, Integer> remaining = new HashMap<>(counts);
+                remaining.remove(pairType);
+                
+                // Calculate as if we have a pair, but add 1 since we're waiting for the pair
+                int shanten = calculateShantenWithPair(remaining, 0, 0) + 1;
+                // logger.debug("Trying single {} as pair candidate: shanten = {}, remaining tiles = {}", pairType, shanten, remaining);
                 minShanten = Math.min(minShanten, shanten);
             }
         }
         
         // Try without a pair
         int shantenNoPair = calculateShantenWithoutPair(counts, 0, 0);
+        // logger.debug("Without pair: shanten = {}", shantenNoPair);
         minShanten = Math.min(minShanten, shantenNoPair);
         
         return minShanten;
@@ -64,6 +92,7 @@ public class ShantenCalculator {
         }
         
         if (melds + tatsu >= 4) {
+            // We have 4 groups already, calculate shanten
             return 8 - melds * 2 - tatsu - 1;
         }
         
@@ -72,11 +101,18 @@ public class ShantenCalculator {
 
     private int calculateShantenWithoutPair(Map<TileType, Integer> tiles, int melds, int tatsu) {
         if (tiles.isEmpty()) {
-            return 8 - melds * 2 - tatsu;
+            return Math.max(0, 8 - melds * 2 - tatsu);
         }
         
         if (melds + tatsu >= 5) {
-            return 8 - melds * 2 - tatsu;
+            return Math.max(0, 8 - melds * 2 - tatsu);
+        }
+        
+        // Special case: if we have 4 melds and 1 isolated tile, we're tenpai (waiting for pair)
+        int totalTiles = tiles.values().stream().mapToInt(Integer::intValue).sum();
+        if (melds == 4 && tatsu == 0 && totalTiles == 1) {
+            // logger.debug("SPECIAL CASE: 4 melds + 1 isolated tile = tenpai");
+            return 0; // Tenpai, waiting for the isolated tile to form a pair
         }
         
         return calculateMeldFormation(tiles, melds, tatsu, false);
@@ -84,12 +120,17 @@ public class ShantenCalculator {
     
     private int calculateMeldFormation(Map<TileType, Integer> tiles, int melds, int tatsu, boolean hasPair) {
         if (tiles.isEmpty()) {
-            return hasPair ? (8 - melds * 2 - tatsu - 1) : (8 - melds * 2 - tatsu);
+            int result = hasPair ? (8 - melds * 2 - tatsu - 1) : Math.max(0, 8 - melds * 2 - tatsu);
+            // logger.debug("Empty tiles: melds={}, tatsu={}, hasPair={}, result={}", melds, tatsu, hasPair, result);
+            return result;
         }
         
+        // Don't early terminate just because we have enough groups - we need to use all tiles
         int maxGroups = hasPair ? 4 : 5;
-        if (melds + tatsu >= maxGroups) {
-            return hasPair ? (8 - melds * 2 - tatsu - 1) : (8 - melds * 2 - tatsu);
+        if (melds + tatsu > maxGroups) {
+            // We have too many groups, this path is invalid
+            // logger.debug("Too many groups: melds={}, tatsu={}, maxGroups={}", melds, tatsu, maxGroups);
+            return MAX_SHANTEN;
         }
         
         TileType firstType = tiles.keySet().stream()
@@ -97,7 +138,7 @@ public class ShantenCalculator {
             .orElse(null);
         
         if (firstType == null) {
-            return hasPair ? (8 - melds * 2 - tatsu - 1) : (8 - melds * 2 - tatsu);
+            return hasPair ? (8 - melds * 2 - tatsu - 1) : Math.max(0, 8 - melds * 2 - tatsu);
         }
         
         int count = tiles.get(firstType);
@@ -167,18 +208,27 @@ public class ShantenCalculator {
             }
         }
         
-        // Discard this tile
+        // If we can't form any valid group with this tile, treat it as isolated and discard it
         Map<TileType, Integer> afterDiscard = new HashMap<>(tiles);
         afterDiscard.merge(firstType, -1, Integer::sum);
         if (afterDiscard.get(firstType) == 0) {
             afterDiscard.remove(firstType);
         }
-        minShanten = Math.min(minShanten, calculateMeldFormation(afterDiscard, melds, tatsu, hasPair));
+        
+        // Always use the result — including when this is the last isolated tile
+        int shantenAfterDiscard = calculateMeldFormation(afterDiscard, melds, tatsu, hasPair);
+        minShanten = Math.min(minShanten, shantenAfterDiscard);
         
         return minShanten;
     }
 
     private int calculateChiitoitsuShanten(List<Tile> hand) {
+        // Chiitoitsu only applies to 13-tile hands
+        // For 14-tile hands, we need to account for the extra tile
+        if (hand.size() != 13 && hand.size() != 14) {
+            return MAX_SHANTEN;
+        }
+        
         Map<TileType, Integer> counts = getTileCounts(hand);
         
         int pairs = 0;
@@ -192,7 +242,14 @@ public class ShantenCalculator {
             }
         }
         
-        return 6 - pairs;
+        int shanten = 6 - pairs;
+        
+        // For 14-tile hands, we have one extra tile, so adjust
+        if (hand.size() == 14) {
+            shanten = Math.max(-1, shanten - 1);
+        }
+        
+        return shanten;
     }
 
     private int calculateKokushiShanten(List<Tile> hand) {

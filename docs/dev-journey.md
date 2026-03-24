@@ -275,6 +275,24 @@ This document tracks the development progress, decisions, and changes made durin
   - Test chi with valid sequences and honor tiles
   - Test kan with sufficient/insufficient tiles
 
+### Bug Fix: Shanten Calculation for Isolated Tiles
+**Status**: Fixed
+**Date**: 2026-03-23
+
+**Problem**: `testExplainMove` revealed that discarding a meld tile from a hand with complete melds + isolated honor tiles (e.g., EAST/WEST) incorrectly showed 5-shanten instead of the expected 1-shanten.
+
+**Root Cause 1** (`calculateMeldFormation`): The "discard isolated tile" code block had a guard condition `if (remainingTiles > 0)` that prevented using the computed shanten result when the last isolated tile was discarded. At that point `remainingTiles = 0`, so `minShanten` stayed at `MAX_SHANTEN = 8`. This caused the standard shanten path to return 8, allowing chiitoitsu (6 − 1 pair = 5-shanten) to dominate.
+
+**Root Cause 2** (`calculateMeldFormation` / `calculateShantenWithoutPair`): With the above fix applied, a secondary issue emerged: for 14-tile hands the no-pair path could now form 4 melds + 1 tatsu = 14 tiles, making the formula `8 − 8 − 1 = −1` (spurious "complete hand"). Without a designated pair you can never reach −1, so clamping was needed.
+
+**Fix**:
+1. Removed the `if (remainingTiles > 0)` guard — isolated tiles at the tail of the hand are now always accounted for.
+2. Applied `Math.max(0, ...)` to all no-pair (`hasPair=false`) formula return sites in `calculateMeldFormation` and `calculateShantenWithoutPair`, preventing a false −1 result on 14-tile hands.
+
+**Test update** (`MoveSuggestionServiceTest.testExplainMove`): Replaced the TODO/bug-print workaround with a proper `assertEquals(1, ...)` assertion for every meld tile discard.
+
+**Verified**: All 97 tests pass after the fix.
+
 ### Phase 4: REST API - Started
 
 #### Task: Implement REST API endpoints

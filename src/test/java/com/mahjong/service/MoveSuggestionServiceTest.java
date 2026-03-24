@@ -142,24 +142,72 @@ class MoveSuggestionServiceTest {
 
     @Test
     void testExplainMove() {
-        // Tenpai hand: 3 melds + 1 pair + 1 incomplete sequence
+        // Hand with 4 complete melds + 2 isolated tiles (14 tiles)
         List<Tile> hand = Arrays.asList(
             new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
             new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
-            new Tile(TileType.M7), new Tile(TileType.M8),
             new Tile(TileType.P1), new Tile(TileType.P1), new Tile(TileType.P1),
-            new Tile(TileType.S5), new Tile(TileType.S6), new Tile(TileType.S7)
+            new Tile(TileType.S5), new Tile(TileType.S6), new Tile(TileType.S7),
+            new Tile(TileType.EAST), new Tile(TileType.WEST)
         );
 
+        List<MoveSuggestion> allSuggestions = suggestionService.suggestMoves(hand);
         MoveSuggestion bestMove = suggestionService.getBestMove(hand);
         String explanation = suggestionService.explainMove(bestMove);
+
+        System.out.println("\n=== Test Hand Analysis ===");
+        System.out.println("Hand: M1 M2 M3 M4 M5 M6 P1 P1 P1 S5 S6 S7 EAST WEST");
+        System.out.println("\nAll move suggestions:");
+        for (MoveSuggestion suggestion : allSuggestions) {
+            System.out.println(suggestionService.explainMove(suggestion));
+        }
+        System.out.println("\nBest move explanation:");
+        System.out.println(explanation);
+        System.out.println("========================\n");
 
         assertNotNull(explanation);
         assertFalse(explanation.isEmpty());
         assertTrue(explanation.contains("Discard"));
         assertTrue(explanation.contains("Shanten"));
-        // Should maintain tenpai (shanten 0)
-        assertTrue(explanation.contains("Shanten = 0") || explanation.contains("shanten = 0"));
+        
+        // Verify optimal moves (EAST or WEST)
+        MoveSuggestion eastDiscard = allSuggestions.stream()
+            .filter(s -> s.getDiscardTile() == TileType.EAST)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(eastDiscard, "Should have EAST discard suggestion");
+        assertEquals(0, eastDiscard.getShantenAfterDiscard(), "Discarding EAST should result in 0-shanten (tenpai)");
+        assertEquals(3, eastDiscard.getUkeireCount(), "Discarding EAST should have 3 tiles ukeire (waiting for EAST)");
+        
+        MoveSuggestion westDiscard = allSuggestions.stream()
+            .filter(s -> s.getDiscardTile() == TileType.WEST)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(westDiscard, "Should have WEST discard suggestion");
+        assertEquals(0, westDiscard.getShantenAfterDiscard(), "Discarding WEST should result in 0-shanten (tenpai)");
+        assertEquals(3, westDiscard.getUkeireCount(), "Discarding WEST should have 3 tiles ukeire (waiting for WEST)");
+        
+        // Verify suboptimal moves (breaking melds)
+        // All of these should result in 1-shanten (3 complete melds + 1 pair + 2 isolated)
+        // Currently they show 5-shanten due to chiitoitsu calculation dominating
+        
+        TileType[] meldTiles = {
+            TileType.M1, TileType.M2, TileType.M3,  // M1-M2-M3 sequence
+            TileType.M4, TileType.M5, TileType.M6,  // M4-M5-M6 sequence
+            TileType.P1,                             // P1-P1-P1 triplet
+            TileType.S5, TileType.S6, TileType.S7   // S5-S6-S7 sequence
+        };
+        
+        for (TileType tileType : meldTiles) {
+            MoveSuggestion discard = allSuggestions.stream()
+                .filter(s -> s.getDiscardTile() == tileType)
+                .findFirst()
+                .orElse(null);
+            assertNotNull(discard, "Should have " + tileType + " discard suggestion");
+            assertEquals(1, discard.getShantenAfterDiscard(),
+                      "Discarding " + tileType + " should result in 1-shanten");
+        }
+        
     }
 
     @Test
