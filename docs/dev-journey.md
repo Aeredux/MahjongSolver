@@ -17,6 +17,13 @@ Three inter-related bugs found while testing the hand S1-S9 + M2M3 + WWW:
 
 **Test updates**: `testOneShantenHand` and `testTwoShantenHand` had expected values of 0 that relied on the bug — corrected to 1. Added regression test `testThreeMeldsNoPairIsOneShantenNotTenpai` covering the user-reported hand.
 
+#### Bug 2b: Ukeire overcounting (~123) due to uncapped tatsu in `calculateShantenWithPair`
+**Root Cause**: After the ryanmen fix (Bug 2), paths like 3 melds + 2 tatsu (e.g., WWW meld + S8S9 ryanmen + M2M3 ryanmen) now resolved to `8-6-2-1 = -1` in the `hasPair=true` formula sites in `calculateShantenWithPair`. The pair-candidate path in `calculateStandardShanten` would then return `-1+1 = 0` for almost every drawn tile, counting it as ukeire. Maximum possible ukeire for a 13-tile hand is `136 - 13 = 123`, which is exactly what users saw.
+
+**Fix**: Added `effectiveTatsu = Math.min(tatsu, 4 - melds)` cap to both the empty-tiles base case and the `melds+tatsu >= 4` early-return in `calculateShantenWithPair`, mirroring the same cap already applied in `calculateShantenWithoutPair`.
+
+**Result**: All 113 tests pass. Ukeire values are now realistic (e.g., ~4-8 for tenpai hands, ~20-40 for 1-shanten hands).
+
 #### Bug 2: Ryanmen not detected for value-8 tiles (S8S9, P8P9, M8M9)
 **Root Cause**: The sequence-forming block in `calculateMeldFormation` was gated by `firstType.getValue() <= 7`, which blocked ryanmen detection for S8S9 (S8 starts at value 8). After discarding S7, the S8S9 stub was silently discarded as two isolated tiles instead of being counted as a tatsu. This caused discard-S7 to show worse (and asymmetric) ukeire compared to the mirror discard-S3.
 
