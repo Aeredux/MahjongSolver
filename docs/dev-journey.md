@@ -275,3 +275,40 @@ This document tracks the development progress, decisions, and changes made durin
   - Test chi with valid sequences and honor tiles
   - Test kan with sufficient/insufficient tiles
 
+### Phase 4: REST API - Started
+
+#### Task: Implement REST API endpoints
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created DTOs (Data Transfer Objects):
+  - `HandRequest`: Request with hand tiles and optional drawn tile
+  - `MoveSuggestionResponse`: Response with suggestions and current shanten
+  - `CallDecisionRequest`: Request with hand, called tile, call type, and context
+  - `CallDecisionResponse`: Response with call recommendation and reasoning
+- Created `MahjongController` REST controller:
+  - `POST /api/suggest-move`: Returns ranked move suggestions
+  - `POST /api/evaluate-call`: Evaluates call decisions (pon/chi/kan/ron/riichi)
+  - `GET /api/health`: Health check endpoint
+- API features:
+  - JSON request/response format
+  - Comprehensive error handling
+  - Logging for all requests
+  - Swagger/OpenAPI documentation integration
+  - Converts between DTOs and domain models
+- Endpoint details:
+  - `/api/suggest-move`: Accepts hand + drawn tile, returns all possible discards ranked by shanten
+  - `/api/evaluate-call`: Accepts hand + call context, returns boolean recommendation with confidence
+  - Both endpoints include reasoning text for transparency
+- Created comprehensive integration tests in `MahjongControllerTest`:
+  - Test health endpoint
+  - Test move suggestion endpoint with valid hand
+  - Test ron call evaluation (winning hand)
+  - Test riichi call evaluation (tenpai hand)
+  - Test pon call evaluation
+  - Test chi call evaluation with sequence tiles
+  - Test empty hand handling
+  - All tests verify JSON response structure
+

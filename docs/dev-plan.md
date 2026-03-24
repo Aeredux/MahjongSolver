@@ -94,25 +94,26 @@
 ---
 
 ### Phase 4: REST API
-**Status**: Not Started
+**Status**: In Progress
 
 **Tasks**:
-- [ ] Set up Spring Boot REST controllers
-- [ ] Implement API endpoints:
-  - [ ] `POST /api/suggest-move` - Move suggestion endpoint
-  - [ ] `GET /api/game-state/{id}` - Retrieve game state
-  - [ ] `POST /api/validate-move` - Move validation
-  - [ ] `GET /api/health` - Health check
-  - [ ] `GET /api/history` - Game history retrieval
-- [ ] Create request/response DTOs
-- [ ] Implement JSON serialization for game states
-- [ ] Add request validation and error handling
-- [ ] Implement rate limiting (~5 req/sec)
-- [ ] Add API logging to database
-- [ ] API documentation (Swagger/OpenAPI)
-- [ ] Integration tests for all endpoints
+- [x] Set up Spring Boot REST controllers
+- [x] Implement core API endpoints:
+  - [x] `POST /api/suggest-move` - Move suggestion endpoint
+  - [x] `POST /api/evaluate-call` - Call decision endpoint (pon/chi/kan/ron/riichi)
+  - [x] `GET /api/health` - Health check
+  - [ ] `GET /api/game-state/{id}` - Retrieve game state (deferred)
+  - [ ] `POST /api/validate-move` - Move validation (deferred)
+  - [ ] `GET /api/history` - Game history retrieval (deferred)
+- [x] Create request/response DTOs
+- [x] Implement JSON serialization for game states
+- [x] Add request validation and error handling
+- [ ] Implement rate limiting (~5 req/sec) (deferred)
+- [ ] Add API logging to database (deferred)
+- [x] API documentation (Swagger/OpenAPI integration)
+- [x] Integration tests for core endpoints
 
-**Dependencies**: Phase 2 (AI Engine), Phase 3 (Database)
+**Dependencies**: Phase 2 (AI Engine) - Complete
 
 **Estimated Completion**: TBD
 
