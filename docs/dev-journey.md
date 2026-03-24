@@ -161,3 +161,35 @@ This document tracks the development progress, decisions, and changes made durin
   - Test waiting tile calculation
   - Test tile counting in hand
 
+#### Task: Implement shanten calculation
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created `ShantenCalculator` service for AI move evaluation:
+  - calculateShanten(): Main entry point, returns minimum shanten across all patterns
+  - calculateStandardShanten(): Standard 4 melds + 1 pair shanten calculation
+  - calculateShantenWithoutPair(): Recursive algorithm for meld/tatsu counting
+  - calculateChiitoitsuShanten(): Seven pairs pattern shanten (6 - pairs)
+  - calculateKokushiShanten(): Thirteen orphans pattern shanten
+  - calculateShantenAfterDiscard(): Evaluates shanten after discarding a tile
+  - isTenpai(): Checks if hand is ready to win (shanten = 0)
+- Shanten algorithm features:
+  - Considers melds (complete groups of 3/4 tiles)
+  - Considers tatsu (incomplete groups: pairs, ryanmen, kanchan)
+  - Evaluates all three winning patterns (standard, chiitoitsu, kokushi)
+  - Returns minimum shanten value across all patterns
+  - Handles edge cases (empty hand, invalid discards)
+- Logging for debugging shanten calculations
+- Created comprehensive unit tests in `ShantenCalculatorTest`:
+  - Test complete hand (shanten = -1)
+  - Test tenpai hands (shanten = 0)
+  - Test 1-shanten, 2-shanten hands
+  - Test chiitoitsu pattern (tenpai and 1-shanten)
+  - Test kokushi pattern (tenpai and 1-shanten)
+  - Test shanten after discard calculation
+  - Test random hands
+  - Test edge cases (empty hand, all pairs)
+  - Test isTenpai() helper method
+
