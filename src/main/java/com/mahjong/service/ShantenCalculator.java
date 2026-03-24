@@ -167,46 +167,49 @@ public class ShantenCalculator {
         }
         
         // Try forming sequences (only for suited tiles)
-        if (firstType.getSuit() != TileSuit.HONOR && firstType.getValue() <= 7) {
+        if (firstType.getSuit() != TileSuit.HONOR) {
             TileType next1 = getNextTileType(firstType);
             TileType next2 = getNextTileType(next1);
-            
-            // Complete sequence
-            if (next1 != null && next2 != null && tiles.containsKey(next1) && tiles.containsKey(next2)) {
-                Map<TileType, Integer> afterSequence = new HashMap<>(tiles);
-                afterSequence.merge(firstType, -1, Integer::sum);
-                afterSequence.merge(next1, -1, Integer::sum);
-                afterSequence.merge(next2, -1, Integer::sum);
-                
-                if (afterSequence.get(firstType) == 0) afterSequence.remove(firstType);
-                if (afterSequence.get(next1) == 0) afterSequence.remove(next1);
-                if (afterSequence.get(next2) == 0) afterSequence.remove(next2);
-                
-                minShanten = Math.min(minShanten, calculateMeldFormation(afterSequence, melds + 1, tatsu, hasPair));
-            }
-            
-            // Ryanmen (two consecutive tiles)
+
+            // Ryanmen (two consecutive tiles) — valid for values 1-8
             if (next1 != null && tiles.containsKey(next1)) {
                 Map<TileType, Integer> afterRyanmen = new HashMap<>(tiles);
                 afterRyanmen.merge(firstType, -1, Integer::sum);
                 afterRyanmen.merge(next1, -1, Integer::sum);
-                
+
                 if (afterRyanmen.get(firstType) == 0) afterRyanmen.remove(firstType);
                 if (afterRyanmen.get(next1) == 0) afterRyanmen.remove(next1);
-                
+
                 minShanten = Math.min(minShanten, calculateMeldFormation(afterRyanmen, melds, tatsu + 1, hasPair));
             }
-            
-            // Kanchan (tiles with one gap)
-            if (next2 != null && tiles.containsKey(next2)) {
-                Map<TileType, Integer> afterKanchan = new HashMap<>(tiles);
-                afterKanchan.merge(firstType, -1, Integer::sum);
-                afterKanchan.merge(next2, -1, Integer::sum);
-                
-                if (afterKanchan.get(firstType) == 0) afterKanchan.remove(firstType);
-                if (afterKanchan.get(next2) == 0) afterKanchan.remove(next2);
-                
-                minShanten = Math.min(minShanten, calculateMeldFormation(afterKanchan, melds, tatsu + 1, hasPair));
+
+            // Complete sequence and kanchan — only valid for values 1-7
+            if (firstType.getValue() <= 7) {
+                // Complete sequence
+                if (next1 != null && next2 != null && tiles.containsKey(next1) && tiles.containsKey(next2)) {
+                    Map<TileType, Integer> afterSequence = new HashMap<>(tiles);
+                    afterSequence.merge(firstType, -1, Integer::sum);
+                    afterSequence.merge(next1, -1, Integer::sum);
+                    afterSequence.merge(next2, -1, Integer::sum);
+
+                    if (afterSequence.get(firstType) == 0) afterSequence.remove(firstType);
+                    if (afterSequence.get(next1) == 0) afterSequence.remove(next1);
+                    if (afterSequence.get(next2) == 0) afterSequence.remove(next2);
+
+                    minShanten = Math.min(minShanten, calculateMeldFormation(afterSequence, melds + 1, tatsu, hasPair));
+                }
+
+                // Kanchan (tiles with one gap)
+                if (next2 != null && tiles.containsKey(next2)) {
+                    Map<TileType, Integer> afterKanchan = new HashMap<>(tiles);
+                    afterKanchan.merge(firstType, -1, Integer::sum);
+                    afterKanchan.merge(next2, -1, Integer::sum);
+
+                    if (afterKanchan.get(firstType) == 0) afterKanchan.remove(firstType);
+                    if (afterKanchan.get(next2) == 0) afterKanchan.remove(next2);
+
+                    minShanten = Math.min(minShanten, calculateMeldFormation(afterKanchan, melds, tatsu + 1, hasPair));
+                }
             }
         }
         
