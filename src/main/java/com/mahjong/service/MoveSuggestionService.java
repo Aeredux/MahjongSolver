@@ -19,6 +19,8 @@ public class MoveSuggestionService {
 
     @Autowired
     private HandAnalyzer handAnalyzer;
+    
+    private static final int MAX_SHANTEN = 8;
 
     public List<MoveSuggestion> suggestMoves(List<Tile> hand) {
         if (hand == null || hand.isEmpty()) {
@@ -28,7 +30,20 @@ public class MoveSuggestionService {
 
         logger.debug("Generating move suggestions for hand with {} tiles", hand.size());
 
-        int currentShanten = shantenCalculator.calculateShanten(hand);
+        // For 14-tile hands, calculate shanten based on best possible discard
+        // For 13-tile hands, use current shanten
+        int currentShanten;
+        if (hand.size() == 14) {
+            // Find minimum shanten after any discard
+            currentShanten = hand.stream()
+                .map(Tile::getType)
+                .distinct()
+                .mapToInt(type -> shantenCalculator.calculateShantenAfterDiscard(hand, type))
+                .min()
+                .orElse(MAX_SHANTEN);
+        } else {
+            currentShanten = shantenCalculator.calculateShanten(hand);
+        }
         logger.debug("Current hand shanten: {}", currentShanten);
 
         Set<TileType> uniqueTiles = hand.stream()

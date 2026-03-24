@@ -43,11 +43,16 @@ A Mahjong application that provides AI-powered move suggestions via API and incl
   - Evaluates all possible moves from current state
   - Calculates hand efficiency (shanten number)
   - Considers tile probabilities and waits
+  - Tracks visible tile counts from all players' discard piles to calculate accurate remaining-tile probabilities (ukeire weighting)
+  - Reads tsumogiri (top-deck discard) vs tedashi (hand-chosen discard) flags to infer opponent hand shape and tenpai likelihood
   
 - **Strategy Evaluator**
   - Defensive play analysis (safe tiles)
   - Offensive play optimization (fastest path to tenpai/winning)
   - Risk assessment for discards
+  - Genbutsu detection: tiles already in an opponent's discard pile are guaranteed safe against ron from that player
+  - Suji inference: use opponent discard patterns to identify likely-safe tiles
+  - Tenpai danger assessment: consecutive tsumogiri discards from an opponent signal possible tenpai
   
 - **Scoring Predictor**
   - Estimates potential hand value
@@ -128,8 +133,10 @@ A Mahjong application that provides AI-powered move suggestions via API and incl
 ### API Features
 1. **Move Suggestion**
    - Accept complete game state (hands, discards, dora, round info)
+   - Discard entries include `tsumogiri` flag per tile (see DiscardedTile model)
    - Return top N suggested moves with reasoning
    - Include confidence scores and strategic notes
+   - Reasoning may reference opponent discard patterns (e.g., "tile is genbutsu safe vs. East", "reduced ukeire due to 2 copies visible in discards")
 
 2. **Game State Validation**
    - Verify game state is legal
@@ -186,11 +193,22 @@ GameState:
 Player:
   - position: enum (East, South, West, North)
   - hand: Tile[]
-  - discards: Tile[]
+  - discards: DiscardedTile[]
   - melds: Meld[]
   - riichi: boolean
   - score: int
 ```
+
+### DiscardedTile Structure
+```
+DiscardedTile:
+  - tile: Tile
+  - tsumogiri: boolean   (true = discarded immediately on draw; false = held ≥1 turn before discarding)
+```
+
+> **Design Note**: The `tsumogiri` flag is visible in FF14 and enables two key inferences:
+> 1. **Tile counting**: all discarded tiles are known and reduce the estimated draw probability for remaining copies in the wall.
+> 2. **Hand-shape reading**: a run of tsumogiri discards from an opponent suggests they are in tenpai or close to it, raising the danger level of discarding into their wait.
 
 ### Move Suggestion Structure
 ```

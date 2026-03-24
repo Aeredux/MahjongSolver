@@ -1,5 +1,6 @@
 package com.mahjong.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mahjong.dto.*;
 import com.mahjong.model.*;
 import com.mahjong.service.*;
@@ -31,15 +32,27 @@ public class MahjongController {
     @Autowired
     private ShantenCalculator shantenCalculator;
 
+    @Autowired
+    private GameHistoryService gameHistoryService;
+
+    @Autowired
+    private ApiCallLogService apiCallLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @PostMapping("/suggest-move")
     @Operation(summary = "Get move suggestions", description = "Returns ranked list of tile discard suggestions based on shanten minimization")
     public ResponseEntity<MoveSuggestionResponse> suggestMove(@RequestBody HandRequest request) {
-        logger.info("Received move suggestion request for hand with {} tiles", 
+        logger.info("Received move suggestion request for hand with {} tiles",
                    request.getHand() != null ? request.getHand().size() : 0);
+
+        long startTime = System.currentTimeMillis();
+        String requestJson = toJson(request);
 
         try {
             List<Tile> hand = convertToTiles(request.getHand());
-            
+
             if (request.getDrawnTile() != null) {
                 hand.add(new Tile(request.getDrawnTile()));
             }
@@ -53,12 +66,23 @@ public class MahjongController {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList()));
 
-            logger.info("Returning {} move suggestions, current shanten: {}", 
+            logger.info("Returning {} move suggestions, current shanten: {}",
                        suggestions.size(), currentShanten);
+
+            long durationMs = System.currentTimeMillis() - startTime;
+            apiCallLogService.log("/api/suggest-move", "POST", requestJson, 200, durationMs, null);
+            gameHistoryService.saveGameHistory(
+                request.getHand() != null ? request.getHand() : List.of(),
+                request.getDrawnTile(),
+                currentShanten,
+                suggestions
+            );
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error processing move suggestion request", e);
+            long durationMs = System.currentTimeMillis() - startTime;
+            apiCallLogService.log("/api/suggest-move", "POST", requestJson, 400, durationMs, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -67,6 +91,9 @@ public class MahjongController {
     @Operation(summary = "Evaluate call decision", description = "Evaluates whether to call pon/chi/kan/ron/riichi")
     public ResponseEntity<CallDecisionResponse> evaluateCall(@RequestBody CallDecisionRequest request) {
         logger.info("Received call decision request for type: {}", request.getCallType());
+
+        long startTime = System.currentTimeMillis();
+        String requestJson = toJson(request);
 
         try {
             List<Tile> hand = convertToTiles(request.getHand());
@@ -112,13 +139,18 @@ public class MahjongController {
             }
 
             CallDecisionResponse response = convertToDTO(decision);
-            
-            logger.info("Call decision for {}: {} (confidence: {})", 
+
+            logger.info("Call decision for {}: {} (confidence: {})",
                        request.getCallType(), decision.isShouldCall(), decision.getConfidence());
+
+            long durationMs = System.currentTimeMillis() - startTime;
+            apiCallLogService.log("/api/evaluate-call", "POST", requestJson, 200, durationMs, null);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error processing call decision request", e);
+            long durationMs = System.currentTimeMillis() - startTime;
+            apiCallLogService.log("/api/evaluate-call", "POST", requestJson, 400, durationMs, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -127,6 +159,15 @@ public class MahjongController {
     @Operation(summary = "Health check", description = "Returns service health status")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("Mahjong AI service is running");
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            logger.warn("Failed to serialize request to JSON", e);
+            return null;
+        }
     }
 
     private List<Tile> convertToTiles(List<TileType> tileTypes) {

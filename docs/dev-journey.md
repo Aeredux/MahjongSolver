@@ -2,6 +2,53 @@
 
 This document tracks the development progress, decisions, and changes made during implementation.
 
+## 2026-03-24
+
+### Design: Discard-Aware Tile Efficiency
+**Status**: Documented (implementation deferred)
+
+**Overview**: Extended the design to incorporate visible opponent discard information into tile efficiency calculations, leveraging data exposed by the FF14 mahjong interface.
+
+**Changes to `application-design.md`**:
+- Updated `Player.discards` field type from `Tile[]` to `DiscardedTile[]`
+- Added new `DiscardedTile` data model with fields: `tile: Tile` and `tsumogiri: boolean`
+  - `tsumogiri = true`: tile was discarded immediately upon drawing (top-deck discard)
+  - `tsumogiri = false`: tile was held for at least one turn before discarding (tedashi)
+- Extended **Move Analyzer** to describe discard-based ukeire weighting and tsumogiri pattern reading
+- Extended **Strategy Evaluator** to describe genbutsu detection, suji inference, and tenpai danger assessment
+- Updated **API Features / Move Suggestion** to note that `DiscardedTile[]` is the expected input format and that reasoning may reference opponent discard patterns
+
+**Changes to `dev-plan.md`**:
+- Replaced vague "Tile probability tracking (deferred)" task in Phase 2 with a detailed "Discard-aware tile efficiency (deferred)" task list covering: model update, tile counting, genbutsu detection, tsumogiri pattern reading, and reasoning output
+- Added Phase 4 task to update the `POST /api/suggest-move` DTO to accept `DiscardedTile[]` per player
+- Added decision log entry for 2026-03-24
+
+### Phase 3: Database & Persistence
+**Status**: Complete
+**Date**: 2026-03-24
+
+**Changes**:
+- Created `entity` package with two JPA entities:
+  - `GameHistory`: stores each move suggestion request — hand tiles (comma-separated), drawn tile, current shanten, best discard tile name, best confidence, suggestion count, and timestamp
+  - `ApiCallLog`: stores every API call — endpoint, HTTP method, request body (TEXT column), response status, duration in ms, error message, and timestamp
+- Both entities use `@PrePersist` to auto-set `createdAt` on first save
+- Created `repository` package with Spring Data JPA interfaces:
+  - `GameHistoryRepository`: `findAllByOrderByCreatedAtDesc()`
+  - `ApiCallLogRepository`: `findAllByOrderByCreatedAtDesc()`, `findByEndpointOrderByCreatedAtDesc(String)`
+- Created `GameHistoryService`: `saveGameHistory()`, `findAll()`, `findRecent(int)` (via `PageRequest`), `findById()`
+- Created `ApiCallLogService`: `log()`, `findAll()`, `findByEndpoint()`, `findById()`
+- Wired both services into `MahjongController`:
+  - All POST endpoints time the request and log to `ApiCallLog` (success and error paths)
+  - `/api/suggest-move` additionally saves a `GameHistory` record per request
+  - Added `toJson()` helper for safe request serialization
+- Tables are auto-created by `spring.jpa.hibernate.ddl-auto=update`; H2 console available at `/h2-console`
+- Written tests:
+  - `GameHistoryServiceTest`: 8 tests covering save, null drawn tile, empty suggestions, findById, findAll, findRecent limit, serialization format, best discard storage
+  - `ApiCallLogServiceTest`: 7 tests covering log, error message, findById, findAll, findByEndpoint filtering, null request body, ordering
+- All 112 tests pass
+
+---
+
 ## 2026-03-23
 
 ### Planning Phase

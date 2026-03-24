@@ -29,7 +29,7 @@
 ## Development Phases
 
 ### Phase 1: Core Game Engine
-**Status**: In Progress
+**Status**: Complete
 
 **Tasks**:
 - [x] Set up Spring Boot project structure
@@ -54,18 +54,24 @@
 ---
 
 ### Phase 2: AI/Strategy Engine
-**Status**: Not Started
+**Status**: Complete (implemented as part of Phase 1)
 
 **Tasks**:
-- [ ] Implement shanten calculation algorithm
-- [ ] Build move evaluation system
-  - [ ] Evaluate all possible discards from current hand
-  - [ ] Calculate hand efficiency for each option
-  - [ ] Rank moves by shanten reduction
-- [ ] Create tile probability tracking
-- [ ] Implement waiting tile (machi) detection
-- [ ] Test with known game scenarios and edge cases
-- [ ] Performance optimization for move calculation
+- [x] Implement shanten calculation algorithm (`ShantenCalculator`)
+- [x] Build move evaluation system
+  - [x] Evaluate all possible discards from current hand
+  - [x] Calculate hand efficiency for each option
+  - [x] Rank moves by shanten reduction
+- [x] Implement waiting tile (machi) / ukeire detection
+- [x] Test with known game scenarios and edge cases
+- [ ] Discard-aware tile efficiency (deferred)
+  - [ ] Add `tsumogiri` boolean flag to `DiscardedTile` model (top-deck discard vs held)
+  - [ ] Update `GameStateRequest` DTO to accept `DiscardedTile[]` per player instead of `Tile[]`
+  - [ ] Implement tile counting: subtract all visible discards from remaining-tile counts when calculating ukeire probabilities
+  - [ ] Implement genbutsu detection: flag tiles present in an opponent's discard pile as guaranteed safe against that player's ron
+  - [ ] Implement tsumogiri pattern reading: track consecutive tsumogiri discards per opponent to estimate tenpai danger level
+  - [ ] Surface discard-based reasoning in `MoveSuggestion.reasoning` (e.g. "genbutsu safe vs East", "only 1 copy left in wall")
+- [ ] Performance optimization (current performance meets <500ms target)
 
 **Dependencies**: Phase 1 (Core Game Engine)
 
@@ -74,18 +80,18 @@
 ---
 
 ### Phase 3: Database & Persistence
-**Status**: Not Started
+**Status**: Complete
 
 **Tasks**:
-- [ ] Configure H2 database (file-based mode)
-- [ ] Set up Spring Data JPA
-- [ ] Create entity models
-  - [ ] GameHistory entity
-  - [ ] ApiCallLog entity
-- [ ] Implement repository interfaces
-- [ ] Add database initialization scripts
-- [ ] Configure H2 web console for debugging
-- [ ] Test data persistence and retrieval
+- [x] Configure H2 database (file-based mode)
+- [x] Set up Spring Data JPA
+- [x] Create entity models
+  - [x] `GameHistory` entity (hand tiles, drawn tile, shanten, best discard, confidence, suggestion count, timestamp)
+  - [x] `ApiCallLog` entity (endpoint, method, request body, status, duration, error, timestamp)
+- [x] Implement repository interfaces (`GameHistoryRepository`, `ApiCallLogRepository`)
+- [x] Add database initialization scripts (handled by `spring.jpa.hibernate.ddl-auto=update`)
+- [x] Configure H2 web console for debugging (accessible at `/h2-console`)
+- [x] Test data persistence and retrieval (`GameHistoryServiceTest`, `ApiCallLogServiceTest`)
 
 **Dependencies**: Phase 1 (for entity models)
 
@@ -94,7 +100,7 @@
 ---
 
 ### Phase 4: REST API
-**Status**: In Progress
+**Status**: Mostly Complete (core endpoints done; deferred items depend on Phase 3)
 
 **Tasks**:
 - [x] Set up Spring Boot REST controllers
@@ -112,6 +118,7 @@
 - [ ] Add API logging to database (deferred)
 - [x] API documentation (Swagger/OpenAPI integration)
 - [x] Integration tests for core endpoints
+- [ ] Update `POST /api/suggest-move` request DTO: `discards` per player changed from `Tile[]` to `DiscardedTile[]` with `tsumogiri` flag (prerequisite for discard-aware efficiency)
 
 **Dependencies**: Phase 2 (AI Engine) - Complete
 
@@ -182,12 +189,13 @@
 
 ## Current Sprint
 
-**Active Phase**: None (Planning complete, ready to start Phase 1)
+**Active Phase**: Phase 5 (Web Visualization)
 
 **Next Steps**:
-1. Initialize Spring Boot project
-2. Set up project structure and dependencies
-3. Begin implementing tile and game state models
+1. Choose frontend framework and set up project structure
+2. Implement tile rendering system
+3. Build game state visualization (hand display, discard piles, dora, round info)
+4. Create move suggestion display with confidence scores and reasoning
 
 ---
 
@@ -211,6 +219,12 @@
 - H2 database selected for persistence
 - Tile assets copied and documented
 - Development phases defined
+
+**2026-03-24**: Discard-aware tile efficiency feature designed
+- FF14 exposes each player's discard pile with tsumogiri (top-deck discard) vs tedashi (held discard) distinction
+- `Player.discards` model updated to `DiscardedTile[]`; each entry carries tile + `tsumogiri: boolean`
+- Three capabilities planned: (1) tile counting for accurate ukeire weighting, (2) genbutsu safety detection, (3) tsumogiri pattern reading for opponent tenpai danger
+- Implementation deferred until after Phase 3; API DTO update (`DiscardedTile[]`) is a prerequisite
 
 ---
 
