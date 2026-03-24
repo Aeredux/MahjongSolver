@@ -39,3 +39,28 @@ This document tracks the development progress, decisions, and changes made durin
 - Created main application class `MahjongServerApplication.java`
 - Base package: `com.mahjong`
 
+#### Task: Implement tile models
+**Status**: Completed
+**Started**: 2026-03-23
+**Completed**: 2026-03-23
+
+**Changes**:
+- Created `TileSuit` enum (MANZU, PINZU, SOUZU, HONOR)
+- Created `TileType` enum with all 34 tile types:
+  - 9 Manzu (characters) tiles (M1-M9)
+  - 9 Pinzu (circles) tiles (P1-P9)
+  - 9 Souzu (bamboo) tiles (S1-S9)
+  - 7 Honor tiles (4 winds + 3 dragons)
+  - Helper methods: isTerminal(), isHonor(), isWind(), isDragon(), isSimple()
+- Created `Tile` class with:
+  - TileType and red dora flag
+  - Convenience methods delegating to TileType
+  - isTerminalOrHonor() helper
+  - toString() for debugging
+- Created comprehensive unit tests in `TileTest.java`:
+  - Test tile creation (normal and red tiles)
+  - Test suit and value getters
+  - Test terminal, honor, wind, dragon, simple tile detection
+  - Test terminalOrHonor detection
+  - Test toString() output
+
