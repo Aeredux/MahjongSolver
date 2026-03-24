@@ -100,12 +100,13 @@ public class ShantenCalculator {
     }
 
     private int calculateShantenWithoutPair(Map<TileType, Integer> tiles, int melds, int tatsu) {
+        int effectiveTatsu = Math.min(tatsu, 4 - melds);
         if (tiles.isEmpty()) {
-            return Math.max(0, 8 - melds * 2 - tatsu);
+            return Math.max(0, 8 - melds * 2 - effectiveTatsu);
         }
         
         if (melds + tatsu >= 5) {
-            return Math.max(0, 8 - melds * 2 - tatsu);
+            return Math.max(0, 8 - melds * 2 - effectiveTatsu);
         }
         
         // Special case: if we have 4 melds and 1 isolated tile, we're tenpai (waiting for pair)
@@ -120,7 +121,8 @@ public class ShantenCalculator {
     
     private int calculateMeldFormation(Map<TileType, Integer> tiles, int melds, int tatsu, boolean hasPair) {
         if (tiles.isEmpty()) {
-            int result = hasPair ? (8 - melds * 2 - tatsu - 1) : Math.max(0, 8 - melds * 2 - tatsu);
+            int effectiveTatsu = hasPair ? tatsu : Math.min(tatsu, 4 - melds);
+            int result = hasPair ? (8 - melds * 2 - effectiveTatsu - 1) : Math.max(0, 8 - melds * 2 - effectiveTatsu);
             // logger.debug("Empty tiles: melds={}, tatsu={}, hasPair={}, result={}", melds, tatsu, hasPair, result);
             return result;
         }

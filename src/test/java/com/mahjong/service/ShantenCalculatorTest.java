@@ -56,8 +56,8 @@ class ShantenCalculatorTest {
             new Tile(TileType.S5), new Tile(TileType.S6)
         );
 
-        // This 13-tile hand is tenpai (can win on next draw)
-        assertEquals(0, calculator.calculateShanten(oneShantenHand));
+        // 3 melds + 2 partial sequences + no pair = 1-shanten (must complete 1 partial AND have a pair source)
+        assertEquals(1, calculator.calculateShanten(oneShantenHand));
     }
 
     @Test
@@ -70,8 +70,8 @@ class ShantenCalculatorTest {
             new Tile(TileType.S7)
         );
 
-        // This 13-tile hand is also tenpai (3 melds + 2 tatsu)
-        assertEquals(0, calculator.calculateShanten(twoShantenHand));
+        // 3 melds + 2 kanchan waits + no pair = 1-shanten
+        assertEquals(1, calculator.calculateShanten(twoShantenHand));
     }
 
     @Test
@@ -160,6 +160,28 @@ class ShantenCalculatorTest {
 
         int shanten = calculator.calculateShanten(randomHand);
         assertTrue(shanten >= 0 && shanten <= 8);
+    }
+
+    @Test
+    void testThreeMeldsNoPairIsOneShantenNotTenpai() {
+        // Regression: S1-S9 + M2M3 + WWW (14 tiles) — reported shanten bug
+        // Discarding WHITE keeps tenpai (0); discarding any sou tile should give 1-shanten
+        List<Tile> hand14 = Arrays.asList(
+            new Tile(TileType.S1), new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.S4), new Tile(TileType.S5), new Tile(TileType.S6),
+            new Tile(TileType.S7), new Tile(TileType.S8), new Tile(TileType.S9),
+            new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.WHITE), new Tile(TileType.WHITE), new Tile(TileType.WHITE)
+        );
+
+        // Discard WHITE: S1-S9 + M2M3 + WW = 3 melds + pair(WW) + tatsu(M2M3) = tenpai
+        assertEquals(0, calculator.calculateShantenAfterDiscard(hand14, TileType.WHITE));
+
+        // Discard S1: S2-S9 + M2M3 + WWW = 3 melds + 2 tatsu + no pair = 1-shanten
+        assertEquals(1, calculator.calculateShantenAfterDiscard(hand14, TileType.S1));
+
+        // Discard S4: S1S2S3 S5S6S7 S8S9 + M2M3 + WWW = same structure = 1-shanten
+        assertEquals(1, calculator.calculateShantenAfterDiscard(hand14, TileType.S4));
     }
 
     @Test

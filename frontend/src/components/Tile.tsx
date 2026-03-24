@@ -3,6 +3,7 @@ import { TILE_SPRITE_POSITIONS, TILE_DISPLAY_NAMES, type TileType } from '@/type
 
 const SPRITE_COLS = 10
 const SPRITE_ROWS = 4
+const TILE_PAD = 0.08  // fraction of each sprite cell that is padding on each side
 
 interface TileProps {
   tile: TileType
@@ -21,11 +22,11 @@ const SIZE_CLASSES = {
 
 export function Tile({ tile, size = 'md', highlighted, dimmed, onClick, className }: TileProps) {
   const pos = TILE_SPRITE_POSITIONS[tile]
-  const xPct = pos.col / (SPRITE_COLS - 1)
-  const yPct = pos.row / (SPRITE_ROWS - 1)
 
-  const bgPositionX = `${(xPct * 100).toFixed(4)}%`
-  const bgPositionY = `${(yPct * 100).toFixed(4)}%`
+  const bgSizeX = `${(SPRITE_COLS / (1 - 2 * TILE_PAD) * 100).toFixed(2)}%`
+  const bgSizeY = `${(SPRITE_ROWS / (1 - 2 * TILE_PAD) * 100).toFixed(2)}%`
+  const bgPositionX = `${(100 * (pos.col + TILE_PAD) / (SPRITE_COLS - 1 + 2 * TILE_PAD)).toFixed(4)}%`
+  const bgPositionY = `${(100 * (pos.row + TILE_PAD) / (SPRITE_ROWS - 1 + 2 * TILE_PAD)).toFixed(4)}%`
 
   return (
     <div
@@ -43,7 +44,7 @@ export function Tile({ tile, size = 'md', highlighted, dimmed, onClick, classNam
       )}
       style={{
         backgroundImage: "url('/assets/tiles/tiles.png')",
-        backgroundSize: `${SPRITE_COLS * 100}% ${SPRITE_ROWS * 100}%`,
+        backgroundSize: `${bgSizeX} ${bgSizeY}`,
         backgroundPosition: `${bgPositionX} ${bgPositionY}`,
         backgroundRepeat: 'no-repeat',
       }}
