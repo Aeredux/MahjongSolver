@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mahjong Server API Guide</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #222; }
+    h1 { border-bottom: 2px solid #333; padding-bottom: 8px; }
+    h2 { border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 40px; }
+    h3 { margin-top: 28px; color: #444; }
+    code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+    pre { background: #f4f4f4; padding: 14px; border-radius: 5px; overflow-x: auto; }
+    pre code { background: none; padding: 0; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #ccc; padding: 7px 12px; text-align: left; }
+    th { background: #f0f0f0; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 32px 0; }
+    .method { display: inline-block; background: #4a90d9; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: bold; margin-right: 6px; }
+    .method.get { background: #2e9e5b; }
+    .method.post { background: #d96a20; }
+  </style>
+</head>
+<body>
+
+<h1>Mahjong Server API Guide</h1>
+<p>Base URL: <code>http://localhost:8080</code></p>
+<p>This server provides Japanese Riichi Mahjong move suggestions and call-decision evaluation.
+All requests and responses use JSON. All tile types are passed as strings (see Tile Reference below).</p>
+
+<hr>
+
+<h2>Tile Reference</h2>
+
+<h3>Suited Tiles</h3>
+<table>
+  <tr><th>Suit</th><th>Tiles</th></tr>
+  <tr><td>Manzu (characters 万)</td><td><code>M1</code> <code>M2</code> <code>M3</code> <code>M4</code> <code>M5</code> <code>M6</code> <code>M7</code> <code>M8</code> <code>M9</code></td></tr>
+  <tr><td>Pinzu (circles 筒)</td><td><code>P1</code> <code>P2</code> <code>P3</code> <code>P4</code> <code>P5</code> <code>P6</code> <code>P7</code> <code>P8</code> <code>P9</code></td></tr>
+  <tr><td>Souzu (bamboo 索)</td><td><code>S1</code> <code>S2</code> <code>S3</code> <code>S4</code> <code>S5</code> <code>S6</code> <code>S7</code> <code>S8</code> <code>S9</code></td></tr>
+</table>
+
+<h3>Honor Tiles</h3>
+<table>
+  <tr><th>Name</th><th>Code</th><th>Description</th></tr>
+  <tr><td>East wind</td><td><code>EAST</code></td><td>東</td></tr>
+  <tr><td>South wind</td><td><code>SOUTH</code></td><td>南</td></tr>
+  <tr><td>West wind</td><td><code>WEST</code></td><td>西</td></tr>
+  <tr><td>North wind</td><td><code>NORTH</code></td><td>北</td></tr>
+  <tr><td>White dragon</td><td><code>WHITE</code></td><td>白 (Haku)</td></tr>
+  <tr><td>Green dragon</td><td><code>GREEN</code></td><td>発 (Hatsu)</td></tr>
+  <tr><td>Red dragon</td><td><code>RED</code></td><td>中 (Chun)</td></tr>
+</table>
+
+<hr>
+
+<h2>Endpoints</h2>
+
+<hr>
+
+<h3><span class="method get">GET</span> /api/health</h3>
+<p>Health check. Returns <code>200 OK</code> with a plain string when the server is running.</p>
+<pre><code>"OK"</code></pre>
+
+<hr>
+
+<h3><span class="method post">POST</span> /api/suggest-move</h3>
+<p>Given a player's current hand (13 or 14 tiles), returns a ranked list of discard suggestions
+with shanten values, ukeire counts, confidence scores, and reasoning.</p>
+
+<h4>Request Body</h4>
+<pre><code>{
+  "hand": ["&lt;TileType&gt;", ...],
+  "drawnTile": "&lt;TileType&gt; or null"
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>13 or 14 tiles in the player's hand. If 14 tiles and <code>drawnTile</code> is set, the drawn tile should be included in <code>hand</code>.</td></tr>
+  <tr><td><code>drawnTile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
+</table>
+
+<h4>Response Body</h4>
+<pre><code>{
+  "currentShanten": 0,
+  "suggestions": [
+    {
+      "discardTile": "WHITE",
+      "shantenAfterDiscard": 0,
+      "confidence": 1.0,
+      "reasoning": "Discarding WHITE keeps you at tenpai (0-shanten). 8 tiles can improve your hand.",
+      "ukeireCount": 8
+    },
+    {
+      "discardTile": "S1",
+      "shantenAfterDiscard": 1,
+      "confidence": 0.5,
+      "reasoning": "Discarding S1 worsens shanten from 0 to 1.",
+      "ukeireCount": 24
+    }
+  ]
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>currentShanten</code></td><td>int</td><td>Shanten of the current hand. -1 = complete, 0 = tenpai, 1 = 1-shanten, etc.</td></tr>
+  <tr><td><code>suggestions</code></td><td>array</td><td>All possible discards, sorted best-first.</td></tr>
+  <tr><td><code>suggestions[].discardTile</code></td><td>TileType string</td><td>The tile to discard.</td></tr>
+  <tr><td><code>suggestions[].shantenAfterDiscard</code></td><td>int</td><td>Shanten after discarding this tile.</td></tr>
+  <tr><td><code>suggestions[].confidence</code></td><td>float 0.0–1.0</td><td>1.0 = best possible discard; 0.5 = suboptimal; 0.0 = worsens shanten.</td></tr>
+  <tr><td><code>suggestions[].reasoning</code></td><td>string</td><td>Human-readable explanation.</td></tr>
+  <tr><td><code>suggestions[].ukeireCount</code></td><td>int</td><td>Number of tiles remaining in the wall that would improve the hand after this discard.</td></tr>
+</table>
+
+<h4>Example — 14-tile hand</h4>
+<pre><code>{
+  "hand": ["S1","S2","S3","S4","S5","S6","S7","S8","S9","M2","M3","WHITE","WHITE","WHITE"],
+  "drawnTile": null
+}</code></pre>
+
+<h4>Example — 13-tile hand</h4>
+<pre><code>{
+  "hand": ["M1","M2","M3","M4","M5","M6","P1","P2","P3","S7","S8","S9","EAST"],
+  "drawnTile": null
+}</code></pre>
+
+<hr>
+
+<h3><span class="method post">POST</span> /api/evaluate-call</h3>
+<p>Evaluates whether the player should make a call (pon, chi, kan, ron, riichi, tsumo).</p>
+
+<h4>Request Body</h4>
+<pre><code>{
+  "hand": ["&lt;TileType&gt;", ...],
+  "calledTile": "&lt;TileType&gt;",
+  "callType": "&lt;CallType&gt;",
+  "sequenceTiles": ["&lt;TileType&gt;", "&lt;TileType&gt;"],
+  "isMenzen": true,
+  "playerScore": 25000,
+  "isOpenKan": false
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Current tiles in hand (not including the called tile).</td></tr>
+  <tr><td><code>calledTile</code></td><td>TileType string</td><td>Yes</td><td>The tile being considered for the call.</td></tr>
+  <tr><td><code>callType</code></td><td>string</td><td>Yes</td><td>One of: <code>CHI</code>, <code>PON</code>, <code>KAN</code>, <code>RON</code>, <code>RIICHI</code>, <code>TSUMO</code></td></tr>
+  <tr><td><code>sequenceTiles</code></td><td>array of 2 TileType strings</td><td>CHI only</td><td>The two tiles in hand that form a sequence with <code>calledTile</code>. E.g. calling chi on M3 with M1M2 in hand: <code>["M1","M2"]</code>.</td></tr>
+  <tr><td><code>isMenzen</code></td><td>boolean</td><td>No</td><td>Whether the hand is currently closed. Default: true.</td></tr>
+  <tr><td><code>playerScore</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000). Default: 25000.</td></tr>
+  <tr><td><code>isOpenKan</code></td><td>boolean</td><td>No</td><td>Whether the kan would be open. Default: false.</td></tr>
+</table>
+
+<h4>CallType Values</h4>
+<table>
+  <tr><th>Value</th><th>Description</th></tr>
+  <tr><td><code>RON</code></td><td>Win by claiming another player's discard</td></tr>
+  <tr><td><code>TSUMO</code></td><td>Win by self-draw</td></tr>
+  <tr><td><code>RIICHI</code></td><td>Declare riichi (closed tenpai hand)</td></tr>
+  <tr><td><code>PON</code></td><td>Call a tile to form a triplet</td></tr>
+  <tr><td><code>CHI</code></td><td>Call a tile to form a sequence (left player only)</td></tr>
+  <tr><td><code>KAN</code></td><td>Call or declare a quad</td></tr>
+</table>
+
+<h4>Response Body</h4>
+<pre><code>{
+  "callType": "PON",
+  "shouldCall": true,
+  "confidence": 0.8,
+  "reasoning": "Pon improves hand efficiency. Shanten goes from 2 to 1.",
+  "shantenBefore": 2,
+  "shantenAfter": 1
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>callType</code></td><td>string</td><td>Echoes back the call type.</td></tr>
+  <tr><td><code>shouldCall</code></td><td>boolean</td><td>true = recommended to make the call.</td></tr>
+  <tr><td><code>confidence</code></td><td>float 0.0–1.0</td><td>Confidence in the recommendation.</td></tr>
+  <tr><td><code>reasoning</code></td><td>string</td><td>Explanation.</td></tr>
+  <tr><td><code>shantenBefore</code></td><td>int</td><td>Shanten before the call.</td></tr>
+  <tr><td><code>shantenAfter</code></td><td>int</td><td>Shanten after the call (if made).</td></tr>
+</table>
+
+<h4>Example — evaluate ron</h4>
+<pre><code>{
+  "hand": ["M1","M2","M3","M4","M5","M6","P1","P2","P3","S7","S8","S9","EAST"],
+  "calledTile": "EAST",
+  "callType": "RON",
+  "isMenzen": true,
+  "playerScore": 25000
+}</code></pre>
+
+<h4>Example — evaluate chi</h4>
+<pre><code>{
+  "hand": ["M3","M4","P1","P2","P3","S1","S2","S3","S7","S8","S9","EAST","EAST"],
+  "calledTile": "M2",
+  "callType": "CHI",
+  "sequenceTiles": ["M3","M4"],
+  "isMenzen": true,
+  "playerScore": 25000
+}</code></pre>
+
+<hr>
+
+<h3><span class="method get">GET</span> /api/history</h3>
+<p>Returns all past move suggestion requests stored in the database, most recent first.</p>
+
+<pre><code>[
+  {
+    "id": 1,
+    "handTiles": "S1,S2,S3,M2,M3,WHITE,WHITE,WHITE,S4,S5,S6,S7,S8,S9",
+    "drawnTile": null,
+    "currentShanten": 0,
+    "bestDiscard": "WHITE",
+    "bestConfidence": 1.0,
+    "suggestionCount": 14,
+    "createdAt": "2026-03-24T17:10:58"
+  }
+]</code></pre>
+
+<hr>
+
+<h2>Shanten Values</h2>
+<table>
+  <tr><th>Value</th><th>Meaning</th></tr>
+  <tr><td>-1</td><td>Complete hand (winning)</td></tr>
+  <tr><td>0</td><td>Tenpai — one tile away from winning</td></tr>
+  <tr><td>1</td><td>1-shanten — one useful draw+discard away from tenpai</td></tr>
+  <tr><td>N</td><td>N exchanges away from tenpai</td></tr>
+</table>
+
+<h2>Confidence Score</h2>
+<table>
+  <tr><th>Value</th><th>Meaning</th></tr>
+  <tr><td>1.0</td><td>Best discard — achieves the lowest possible shanten</td></tr>
+  <tr><td>0.5</td><td>Maintains shanten (not optimal but not harmful)</td></tr>
+  <tr><td>0.0</td><td>Worsens shanten</td></tr>
+</table>
+
+<h2>Integration Notes</h2>
+<ul>
+  <li>All tile type strings are <strong>case-sensitive</strong> — use uppercase (<code>M1</code>, not <code>m1</code>).</li>
+  <li>A 14-tile hand is typical after drawing; the API evaluates which tile to discard.</li>
+  <li>A 13-tile hand is also accepted for pre-draw analysis.</li>
+  <li><code>drawnTile</code> is informational — include it in <code>hand</code> if you want it evaluated as a discard candidate.</li>
+  <li><code>suggestions</code> is always sorted best-first. Use <code>suggestions[0]</code> for the single best recommended discard.</li>
+</ul>
+
+</body>
+</html>
