@@ -10,8 +10,9 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class HandRequest {
+public class ValidateMoveRequest {
     private List<TileType> hand;
+    private TileType discardTile;
     private TileType drawnTile;
-    private List<PlayerDiscardsDTO> opponents;
+    private boolean riichi;
 }

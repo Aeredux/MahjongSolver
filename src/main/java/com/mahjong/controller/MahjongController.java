@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -58,7 +60,7 @@ public class MahjongController {
             }
 
             int currentShanten = shantenCalculator.calculateShanten(hand);
-            List<MoveSuggestion> suggestions = moveSuggestionService.suggestMoves(hand);
+            List<MoveSuggestion> suggestions = moveSuggestionService.suggestMoves(hand, request.getOpponents());
 
             MoveSuggestionResponse response = new MoveSuggestionResponse();
             response.setCurrentShanten(currentShanten);
@@ -153,6 +155,52 @@ public class MahjongController {
             apiCallLogService.log("/api/evaluate-call", "POST", requestJson, 400, durationMs, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/game-state/{id}")
+    @Operation(summary = "Get game state by ID", description = "Retrieves a stored game history record by its ID")
+    public ResponseEntity<?> getGameState(@PathVariable Long id) {
+        return gameHistoryService.findById(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/validate-move")
+    @Operation(summary = "Validate a move", description = "Checks whether discarding a tile from the given hand is legal")
+    public ResponseEntity<Map<String, Object>> validateMove(@RequestBody ValidateMoveRequest request) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<String> errors = new ArrayList<>();
+
+        if (request.getHand() == null || request.getHand().isEmpty()) {
+            errors.add("Hand must not be empty.");
+        }
+        if (request.getDiscardTile() == null) {
+            errors.add("discardTile must not be null.");
+        }
+
+        if (errors.isEmpty()) {
+            boolean tileInHand = request.getHand().contains(request.getDiscardTile());
+            if (!tileInHand) {
+                errors.add("Tile " + request.getDiscardTile() + " is not in the hand.");
+            }
+
+            if (request.isRiichi() && request.getDrawnTile() != null
+                    && request.getDiscardTile() != request.getDrawnTile()) {
+                errors.add("In riichi you may only discard the drawn tile (tsumogiri). "
+                        + "Expected " + request.getDrawnTile() + ", got " + request.getDiscardTile() + ".");
+            }
+
+            int handSize = request.getHand().size();
+            if (handSize != 13 && handSize != 14) {
+                errors.add("Hand size must be 13 or 14 (got " + handSize + ").");
+            }
+        }
+
+        result.put("valid", errors.isEmpty());
+        result.put("errors", errors);
+        logger.info("validate-move: discardTile={} valid={} errors={}",
+                request.getDiscardTile(), errors.isEmpty(), errors);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/history")

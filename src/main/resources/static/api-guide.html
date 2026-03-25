@@ -78,6 +78,22 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
   <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>13 or 14 tiles in the player's hand. If 14 tiles and <code>drawnTile</code> is set, the drawn tile should be included in <code>hand</code>.</td></tr>
   <tr><td><code>drawnTile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
+  <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, genbutsu detection, and tsumogiri tenpai danger. See below.</td></tr>
+</table>
+
+<h4>opponents[] Fields</h4>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>wind</code></td><td>string</td><td>Opponent's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
+  <tr><td><code>discards</code></td><td>array of DiscardedTile</td><td>All tiles this opponent has discarded, in order.</td></tr>
+  <tr><td><code>riichi</code></td><td>boolean</td><td>Whether this opponent is in riichi. Enables genbutsu detection.</td></tr>
+</table>
+
+<h4>DiscardedTile Fields</h4>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>tile</code></td><td>TileType string</td><td>The tile that was discarded.</td></tr>
+  <tr><td><code>tsumogiri</code></td><td>boolean</td><td>Whether the tile was drawn and immediately discarded (top-deck discard). Consecutive tsumogiri discards indicate tenpai danger.</td></tr>
 </table>
 
 <h4>Response Body</h4>
@@ -112,17 +128,48 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>suggestions[].ukeireCount</code></td><td>int</td><td>Number of tiles remaining in the wall that would improve the hand after this discard.</td></tr>
 </table>
 
-<h4>Example — 14-tile hand</h4>
+<h4>Example — basic (no opponent data)</h4>
 <pre><code>{
   "hand": ["S1","S2","S3","S4","S5","S6","S7","S8","S9","M2","M3","WHITE","WHITE","WHITE"],
   "drawnTile": null
 }</code></pre>
 
-<h4>Example — 13-tile hand</h4>
+<h4>Example — with opponent discards (discard-aware ukeire + genbutsu)</h4>
 <pre><code>{
   "hand": ["M1","M2","M3","M4","M5","M6","P1","P2","P3","S7","S8","S9","EAST"],
-  "drawnTile": null
+  "drawnTile": null,
+  "opponents": [
+    {
+      "wind": "EAST",
+      "riichi": true,
+      "discards": [
+        {"tile": "M9", "tsumogiri": false},
+        {"tile": "NORTH", "tsumogiri": false},
+        {"tile": "S1", "tsumogiri": true},
+        {"tile": "S2", "tsumogiri": true}
+      ]
+    },
+    {
+      "wind": "SOUTH",
+      "riichi": false,
+      "discards": [
+        {"tile": "EAST", "tsumogiri": false},
+        {"tile": "M1", "tsumogiri": true},
+        {"tile": "P9", "tsumogiri": true},
+        {"tile": "P8", "tsumogiri": true},
+        {"tile": "P7", "tsumogiri": true}
+      ]
+    }
+  ]
 }</code></pre>
+
+<p>With opponent data, <code>reasoning</code> in each suggestion will include:</p>
+<ul>
+  <li>Accurate ukeire based on visible discards (e.g. "Ukeire: 6 tiles (5.3% of remaining wall)")</li>
+  <li>Genbutsu flags (e.g. "Genbutsu safe vs EAST (riichi)")</li>
+  <li>Tenpai danger warnings (e.g. "Caution: SOUTH (high tenpai danger: 4 tsumogiri)")</li>
+  <li>Scarcity warnings (e.g. "Only 1 copy of M1 left in wall")</li>
+</ul>
 
 <hr>
 
@@ -200,6 +247,41 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   "isMenzen": true,
   "playerScore": 25000
 }</code></pre>
+
+<hr>
+
+<h3><span class="method get">GET</span> /api/game-state/{id}</h3>
+<p>Retrieves a stored game history record by its numeric ID.</p>
+<pre><code>GET /api/game-state/42</code></pre>
+<p>Returns the <code>GameHistory</code> JSON object, or <code>404</code> if not found. Fields match those in <code>GET /api/history</code>.</p>
+
+<hr>
+
+<h3><span class="method post">POST</span> /api/validate-move</h3>
+<p>Checks whether discarding a specific tile from the given hand is legal.</p>
+
+<h4>Request Body</h4>
+<pre><code>{
+  "hand": ["&lt;TileType&gt;", ...],
+  "discardTile": "&lt;TileType&gt;",
+  "drawnTile": "&lt;TileType&gt; or null",
+  "riichi": false
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><code>hand</code></td><td>array of TileType</td><td>Yes</td><td>The player's current hand (13 or 14 tiles).</td></tr>
+  <tr><td><code>discardTile</code></td><td>TileType string</td><td>Yes</td><td>The tile the player wants to discard.</td></tr>
+  <tr><td><code>drawnTile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Required to validate riichi tsumogiri rule.</td></tr>
+  <tr><td><code>riichi</code></td><td>boolean</td><td>No</td><td>Whether the player is in riichi. If true, only the drawn tile may be discarded.</td></tr>
+</table>
+
+<h4>Response Body</h4>
+<pre><code>{
+  "valid": true,
+  "errors": []
+}</code></pre>
+<p>If invalid: <code>"valid": false</code> with a list of error messages explaining why.</p>
 
 <hr>
 

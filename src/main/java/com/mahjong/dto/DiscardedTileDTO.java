@@ -5,13 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class HandRequest {
-    private List<TileType> hand;
-    private TileType drawnTile;
-    private List<PlayerDiscardsDTO> opponents;
+public class DiscardedTileDTO {
+    private TileType tile;
+    private boolean tsumogiri;
 }

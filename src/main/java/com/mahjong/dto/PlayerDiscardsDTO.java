@@ -1,6 +1,6 @@
 package com.mahjong.dto;
 
-import com.mahjong.model.TileType;
+import com.mahjong.model.Wind;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,8 +10,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class HandRequest {
-    private List<TileType> hand;
-    private TileType drawnTile;
-    private List<PlayerDiscardsDTO> opponents;
+public class PlayerDiscardsDTO {
+    private Wind wind;
+    private List<DiscardedTileDTO> discards;
+    private boolean riichi;
 }
