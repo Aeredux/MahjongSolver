@@ -21,7 +21,7 @@ export const TILE_SPRITE_POSITIONS: Record<TileType, TileSpritePosition> = {
   S7: { row: 2, col: 7 }, S8: { row: 2, col: 8 }, S9: { row: 2, col: 9 },
   EAST:  { row: 3, col: 0 }, SOUTH: { row: 3, col: 1 },
   WEST:  { row: 3, col: 2 }, NORTH: { row: 3, col: 3 },
-  WHITE: { row: 3, col: 4 }, GREEN: { row: 3, col: 5 }, RED: { row: 3, col: 6 },
+  WHITE: { row: 3, col: 5 }, GREEN: { row: 3, col: 6 }, RED: { row: 3, col: 4 },
 }
 
 export const TILE_GROUPS: { label: string; tiles: TileType[] }[] = [
