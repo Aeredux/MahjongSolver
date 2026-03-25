@@ -121,7 +121,7 @@ public class ShantenCalculator {
     
     private int calculateMeldFormation(Map<TileType, Integer> tiles, int melds, int tatsu, boolean hasPair) {
         if (tiles.isEmpty()) {
-            int effectiveTatsu = hasPair ? tatsu : Math.min(tatsu, 4 - melds);
+            int effectiveTatsu = Math.min(tatsu, 4 - melds);
             int result = hasPair ? (8 - melds * 2 - effectiveTatsu - 1) : Math.max(0, 8 - melds * 2 - effectiveTatsu);
             // logger.debug("Empty tiles: melds={}, tatsu={}, hasPair={}, result={}", melds, tatsu, hasPair, result);
             return result;
@@ -140,7 +140,8 @@ public class ShantenCalculator {
             .orElse(null);
         
         if (firstType == null) {
-            return hasPair ? (8 - melds * 2 - tatsu - 1) : Math.max(0, 8 - melds * 2 - tatsu);
+            int effectiveTatsu = Math.min(tatsu, 4 - melds);
+            return hasPair ? (8 - melds * 2 - effectiveTatsu - 1) : Math.max(0, 8 - melds * 2 - effectiveTatsu);
         }
         
         int count = tiles.get(firstType);
