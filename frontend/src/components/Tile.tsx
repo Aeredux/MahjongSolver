@@ -3,7 +3,14 @@ import { TILE_SPRITE_POSITIONS, TILE_DISPLAY_NAMES, type TileType } from '@/type
 
 const SPRITE_COLS = 10
 const SPRITE_ROWS = 4
-const TILE_PAD = 0.08  // fraction of each sprite cell that is padding on each side
+const IMG_W = 2732          // full sprite sheet pixel width
+const IMG_H = 871           // full sprite sheet pixel height
+const TILE_W = 150          // tile content width per cell (px)
+const TILE_H = 200          // tile content height per cell (px)
+const CELL_W = IMG_W / SPRITE_COLS  // 273.2
+const CELL_H = IMG_H / SPRITE_ROWS  // 217.75
+const OFFSET_X = (CELL_W - TILE_W) / 2  // blue padding left of tile content in each cell
+const OFFSET_Y = (CELL_H - TILE_H) / 2  // blue padding above tile content in each cell
 
 interface TileProps {
   tile: TileType
@@ -15,18 +22,18 @@ interface TileProps {
 }
 
 const SIZE_CLASSES = {
-  sm: 'w-8 h-11',
-  md: 'w-10 h-14',
+  sm: 'w-8 h-[43px]',
+  md: 'w-10 h-[53px]',
   lg: 'w-12 h-16',
 }
 
 export function Tile({ tile, size = 'md', highlighted, dimmed, onClick, className }: TileProps) {
   const pos = TILE_SPRITE_POSITIONS[tile]
 
-  const bgSizeX = `${(SPRITE_COLS / (1 - 2 * TILE_PAD) * 100).toFixed(2)}%`
-  const bgSizeY = `${(SPRITE_ROWS / (1 - 2 * TILE_PAD) * 100).toFixed(2)}%`
-  const bgPositionX = `${(100 * (pos.col + TILE_PAD) / (SPRITE_COLS - 1 + 2 * TILE_PAD)).toFixed(4)}%`
-  const bgPositionY = `${(100 * (pos.row + TILE_PAD) / (SPRITE_ROWS - 1 + 2 * TILE_PAD)).toFixed(4)}%`
+  const bgSizeX = `${(IMG_W / TILE_W * 100).toFixed(2)}%`
+  const bgSizeY = `${(IMG_H / TILE_H * 100).toFixed(2)}%`
+  const bgPositionX = `${((pos.col * CELL_W + OFFSET_X) / (IMG_W - TILE_W) * 100).toFixed(4)}%`
+  const bgPositionY = `${((pos.row * CELL_H + OFFSET_Y) / (IMG_H - TILE_H) * 100).toFixed(4)}%`
 
   return (
     <div
