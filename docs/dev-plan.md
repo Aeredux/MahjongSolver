@@ -54,7 +54,7 @@
 ---
 
 ### Phase 2: AI/Strategy Engine
-**Status**: Complete (implemented as part of Phase 1)
+**Status**: Complete
 
 **Tasks**:
 - [x] Implement shanten calculation algorithm (`ShantenCalculator`)
@@ -64,14 +64,14 @@
   - [x] Rank moves by shanten reduction
 - [x] Implement waiting tile (machi) / ukeire detection
 - [x] Test with known game scenarios and edge cases
-- [ ] Discard-aware tile efficiency (deferred)
-  - [ ] Add `tsumogiri` boolean flag to `DiscardedTile` model (top-deck discard vs held)
-  - [ ] Update `GameStateRequest` DTO to accept `DiscardedTile[]` per player instead of `Tile[]`
-  - [ ] Implement tile counting: subtract all visible discards from remaining-tile counts when calculating ukeire probabilities
-  - [ ] Implement genbutsu detection: flag tiles present in an opponent's discard pile as guaranteed safe against that player's ron
-  - [ ] Implement tsumogiri pattern reading: track consecutive tsumogiri discards per opponent to estimate tenpai danger level
-  - [ ] Surface discard-based reasoning in `MoveSuggestion.reasoning` (e.g. "genbutsu safe vs East", "only 1 copy left in wall")
-- [ ] Performance optimization (current performance meets <500ms target)
+- [x] Discard-aware tile efficiency
+  - [x] Add `tsumogiri` boolean flag to `DiscardedTileDTO` model (top-deck discard vs held)
+  - [x] Update `HandRequest` DTO to accept `List<PlayerDiscardsDTO>` per opponent
+  - [x] Implement tile counting: subtract all visible discards from remaining-tile counts when calculating ukeire probabilities
+  - [x] Implement genbutsu detection: flag tiles present in a riichi opponent's discard pile as safe against that player's ron
+  - [x] Implement tsumogiri pattern reading: track consecutive tsumogiri discards per opponent to estimate tenpai danger level
+  - [x] Surface discard-based reasoning in `MoveSuggestion.reasoning` (e.g. "Genbutsu safe vs EAST", "Only 1 copy left in wall")
+- [x] Performance optimization (current performance meets <500ms target)
 
 **Dependencies**: Phase 1 (Core Game Engine)
 
@@ -100,7 +100,7 @@
 ---
 
 ### Phase 4: REST API
-**Status**: Mostly Complete (core endpoints done; deferred items depend on Phase 3)
+**Status**: Complete
 
 **Tasks**:
 - [x] Set up Spring Boot REST controllers
@@ -108,17 +108,17 @@
   - [x] `POST /api/suggest-move` - Move suggestion endpoint
   - [x] `POST /api/evaluate-call` - Call decision endpoint (pon/chi/kan/ron/riichi)
   - [x] `GET /api/health` - Health check
-  - [ ] `GET /api/game-state/{id}` - Retrieve game state (deferred)
-  - [ ] `POST /api/validate-move` - Move validation (deferred)
-  - [ ] `GET /api/history` - Game history retrieval (deferred)
+  - [x] `GET /api/game-state/{id}` - Retrieve game state by ID
+  - [x] `POST /api/validate-move` - Move validation (tile in hand, riichi tsumogiri rule)
+  - [x] `GET /api/history` - Game history retrieval
 - [x] Create request/response DTOs
 - [x] Implement JSON serialization for game states
 - [x] Add request validation and error handling
-- [ ] Implement rate limiting (~5 req/sec) (deferred)
-- [ ] Add API logging to database (deferred)
-- [x] API documentation (Swagger/OpenAPI integration)
+- [x] Implement rate limiting (5 req/sec per IP, sliding window, configurable via `api.rate-limit.*` properties)
+- [x] Add API logging to database
+- [x] API documentation (Swagger/OpenAPI integration + `/docs` HTML guide)
 - [x] Integration tests for core endpoints
-- [ ] Update `POST /api/suggest-move` request DTO: `discards` per player changed from `Tile[]` to `DiscardedTile[]` with `tsumogiri` flag (prerequisite for discard-aware efficiency)
+- [x] Update `POST /api/suggest-move` request DTO: added `List<PlayerDiscardsDTO> opponents` with `tsumogiri` flag per discard
 
 **Dependencies**: Phase 2 (AI Engine) - Complete
 

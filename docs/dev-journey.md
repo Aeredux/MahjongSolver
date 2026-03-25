@@ -40,8 +40,8 @@ Three inter-related bugs found while testing the hand S1-S9 + M2M3 + WWW:
 
 ---
 
-### Design: Discard-Aware Tile Efficiency
-**Status**: Documented (implementation deferred)
+### Feature: Discard-Aware Tile Efficiency, Genbutsu, Tsumogiri (Phase 2)
+**Status**: Implemented 2026-03-24
 
 **Overview**: Extended the design to incorporate visible opponent discard information into tile efficiency calculations, leveraging data exposed by the FF14 mahjong interface.
 
@@ -54,10 +54,33 @@ Three inter-related bugs found while testing the hand S1-S9 + M2M3 + WWW:
 - Extended **Strategy Evaluator** to describe genbutsu detection, suji inference, and tenpai danger assessment
 - Updated **API Features / Move Suggestion** to note that `DiscardedTile[]` is the expected input format and that reasoning may reference opponent discard patterns
 
+**New files**:
+- `dto/DiscardedTileDTO.java` — `{ TileType tile, boolean tsumogiri }`
+- `dto/PlayerDiscardsDTO.java` — `{ Wind wind, List<DiscardedTileDTO> discards, boolean riichi }`
+- `dto/ValidateMoveRequest.java` — `{ List<TileType> hand, TileType discardTile, TileType drawnTile, boolean riichi }`
+- `config/RateLimitInterceptor.java` — per-IP sliding window rate limiter (stdlib only, no extra deps)
+- `config/WebConfig.java` — registers rate limiter on `/api/**`; limit values from `api.rate-limit.*` properties
+
+**Updated files**:
+- `dto/HandRequest.java` — added `List<PlayerDiscardsDTO> opponents` (optional, null-safe)
+- `service/MoveSuggestionService.java`:
+  - New overload `suggestMoves(hand, opponents)`; old single-arg version delegates to it
+  - `buildVisibleCounts()` — aggregates all opponent discards into a `Map<TileType, Integer>`
+  - `buildGenbutsuMap()` — for each riichi opponent, collects their full discard pile as a safe-tile set
+  - `buildTenpaiDanger()` — counts consecutive trailing tsumogiri per opponent (2+ = possible tenpai, 4+ = high danger)
+  - `calculateUkeire()` — now subtracts `visibleCounts` from the 4-copy pool so ukeire reflects true wall contents
+  - `generateReasoning()` — adds: adjusted wall-% ukeire, scarcity warnings (≤1 copy left), genbutsu labels, tsumogiri caution lines
+- `controller/MahjongController.java`:
+  - `GET /api/game-state/{id}` — returns `GameHistory` by ID or 404
+  - `POST /api/validate-move` — validates tile-in-hand, hand size 13/14, riichi tsumogiri rule; returns `{ valid, errors[] }`
+  - `POST /api/suggest-move` now passes `request.getOpponents()` to the service
+- `static/api-guide.html` — documented all new fields: `opponents[]`, `DiscardedTile`, new endpoints, rate limit note, full request examples
+- `src/test/resources/application-test.properties` — overrides rate limit to 1000/sec so integration tests pass
+- `test/controller/MahjongControllerTest.java` — added `@ActiveProfiles("test")`
+
 **Changes to `dev-plan.md`**:
-- Replaced vague "Tile probability tracking (deferred)" task in Phase 2 with a detailed "Discard-aware tile efficiency (deferred)" task list covering: model update, tile counting, genbutsu detection, tsumogiri pattern reading, and reasoning output
-- Added Phase 4 task to update the `POST /api/suggest-move` DTO to accept `DiscardedTile[]` per player
-- Added decision log entry for 2026-03-24
+- Phase 2 status → Complete; all discard-aware subtasks checked
+- Phase 4 status → Complete; all deferred endpoints and rate limiting checked
 
 ### Phase 5: Web Visualization (React Frontend)
 **Status**: Complete
