@@ -73,4 +73,5 @@ export interface GameHistoryEntry {
   best_discard: string | null
   best_confidence: number
   suggestion_count: number
+  discard_tiles: string | null
 }

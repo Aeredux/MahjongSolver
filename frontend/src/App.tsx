@@ -12,6 +12,20 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('suggest')
+  const [loadedHand, setLoadedHand] = useState<{ hand: TileType[], drawnTile: TileType | null, discardTiles: TileType[] } | null>(null)
+  const [discardTiles, setDiscardTiles] = useState<TileType[]>([])
+
+  function handleDiscardTilesChange(discardTiles: TileType[]) {
+    setDiscardTiles(discardTiles)
+  }
+
+  function handleLoadHand(hand: TileType[], drawnTile: TileType | null, discardTiles: TileType[] = []) {
+    setLoadedHand({ hand, drawnTile, discardTiles })
+    setDiscardTiles(discardTiles)
+    setActiveTab('suggest')
+    // Clear the loaded hand after a short delay to allow HandInput to process it
+    setTimeout(() => setLoadedHand(null), 100)
+  }
 
   async function handleSubmit(hand: TileType[], drawnTile: TileType | null) {
     setIsLoading(true)
@@ -21,7 +35,7 @@ function App() {
       const res = await fetch('/api/suggest-move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hand, drawn_tile: drawnTile }),
+        body: JSON.stringify({ hand, drawn_tile: drawnTile, discard_tiles: discardTiles }),
       })
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data: MoveSuggestionResponse = await res.json()
@@ -70,7 +84,7 @@ function App() {
           <TabsContent value="suggest">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <HandInput onSubmit={handleSubmit} isLoading={isLoading} />
+                <HandInput onSubmit={handleSubmit} onDiscardTilesChange={handleDiscardTilesChange} isLoading={isLoading} loadedHand={loadedHand} />
               </div>
               <div>
                 {error && (
@@ -100,7 +114,7 @@ function App() {
           </TabsContent>
 
           <TabsContent value="history">
-            <GameHistory />
+            <GameHistory onLoadEntry={handleLoadHand} />
           </TabsContent>
         </Tabs>
       </main>

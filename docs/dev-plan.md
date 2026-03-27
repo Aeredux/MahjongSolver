@@ -86,7 +86,7 @@
 - [x] Configure H2 database (file-based mode)
 - [x] Set up Spring Data JPA
 - [x] Create entity models
-  - [x] `GameHistory` entity (hand tiles, drawn tile, shanten, best discard, confidence, suggestion count, timestamp)
+  - [x] `GameHistory` entity (hand tiles, drawn tile, shanten, best discard, confidence, suggestion count, discard tiles, timestamp)
   - [x] `ApiCallLog` entity (endpoint, method, request body, status, duration, error, timestamp)
 - [x] Implement repository interfaces (`GameHistoryRepository`, `ApiCallLogRepository`)
 - [x] Add database initialization scripts (handled by `spring.jpa.hibernate.ddl-auto=update`)
@@ -119,6 +119,7 @@
 - [x] API documentation (Swagger/OpenAPI integration + `/docs` HTML guide)
 - [x] Integration tests for core endpoints
 - [x] Update `POST /api/suggest-move` request DTO: added `List<PlayerDiscardsDTO> opponents` with `tsumogiri` flag per discard
+- [x] Update `POST /api/suggest-move` request DTO: added `List<TileType> discardTiles` for user discard tracking
 
 **Dependencies**: Phase 2 (AI Engine) - Complete
 
@@ -154,6 +155,17 @@
 - [x] Integration with backend API (Vite proxy to Spring Boot during dev; static build for production)
 - [x] Added `GET /api/history` endpoint to backend
 - [x] Build output configured to `src/main/resources/static`
+- [x] Discard tiles storage and display
+  - [x] Database: Added `discard_tiles` column to `game_history` table
+  - [x] Backend: Updated entities, services, and API to handle discard tiles
+  - [x] Frontend: Added discard list UI with right-click tile picker
+  - [x] History: Display discard tiles in history entries
+  - [x] Load: Restore discard tiles when loading history entries
+- [x] UI enhancements: Load history & discard list
+  - [x] Load button in history entries with improved visibility
+  - [x] Right-click context menu handling for discard list
+  - [x] Discard list management (add/remove/clear functionality)
+  - [x] State management for discard tiles across components
 
 **Dependencies**: Phase 4 (REST API)
 

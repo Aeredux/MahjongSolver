@@ -4,6 +4,45 @@ This document tracks the development progress, decisions, and changes made durin
 
 ## 2026-03-27
 
+### Discard Tiles Storage Feature
+**Status**: ✅ Complete
+**Date**: 2026-03-27
+
+**Changes**:
+- **Database**: Added `discard_tiles` column to `game_history` table
+- **Backend**: 
+  - Updated `GameHistory` entity to include `discardTiles` field
+  - Modified `GameHistoryService.saveGameHistory()` to accept and store discard tiles
+  - Updated `HandRequest` DTO to include `discardTiles` field
+  - Modified `MahjongController.suggestMove()` to pass discard tiles to history service
+- **Frontend**:
+  - Updated `GameHistoryEntry` TypeScript interface to include `discard_tiles`
+  - Modified `GameHistory` component to display discard tiles in history entries
+  - Updated `HandInput` component to communicate discard list to parent via `onDiscardTilesChange` prop
+  - Modified `App.tsx` to track discard tiles state and include them in API requests
+- **UI**: Discard tiles now appear in history entries under "Discards" label
+- **API**: `/api/suggest-move` now accepts optional `discard_tiles` array in request body
+- **Load Function**: Fixed loading to restore discard tiles from history entries
+- **Testing**: Verified frontend builds and backend compiles successfully
+
+### UI Features: Load History & Discard List
+**Status**: ✅ Complete
+**Date**: 2026-03-27
+
+**Changes**:
+- **Load Button**: Added "Load" button to each history entry in GameHistory component
+  - Loads hand, drawn tile, and discard tiles from history into the UI
+  - Automatically switches to "Suggest Move" tab
+  - Uses outline variant with improved visibility
+- **Discard List**: Added discard list section to HandInput component
+  - Right-click tiles in picker to add to discard list (not hand)
+  - Visual feedback with hover states and X buttons for removal
+  - Clear button to empty entire discard list
+  - Tiles stored separately from hand and sent to backend
+- **Tile Component**: Added `onContextMenu` prop support for right-click handling
+- **User Experience**: Left-click adds to hand, right-click adds to discard list
+- **Bug Fixes**: Fixed right-click context menu interference and load button visibility
+
 ### DTO Update: Accept discards, seatWind, roundWind in evaluate-call
 **Status**: Complete
 **Date**: 2026-03-27

@@ -18,6 +18,7 @@ interface TileProps {
   highlighted?: boolean
   dimmed?: boolean
   onClick?: () => void
+  onContextMenu?: (e: React.MouseEvent) => void
   className?: string
 }
 
@@ -27,7 +28,7 @@ const SIZE_CLASSES = {
   lg: 'w-12 h-16',
 }
 
-export function Tile({ tile, size = 'md', highlighted, dimmed, onClick, className }: TileProps) {
+export function Tile({ tile, size = 'md', highlighted, dimmed, onClick, onContextMenu, className }: TileProps) {
   const pos = TILE_SPRITE_POSITIONS[tile]
 
   const bgSizeX = `${(IMG_W / TILE_W * 100).toFixed(2)}%`
@@ -40,6 +41,7 @@ export function Tile({ tile, size = 'md', highlighted, dimmed, onClick, classNam
       role={onClick ? 'button' : undefined}
       title={TILE_DISPLAY_NAMES[tile]}
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={cn(
         SIZE_CLASSES[size],
         'relative inline-block rounded-sm select-none flex-shrink-0',

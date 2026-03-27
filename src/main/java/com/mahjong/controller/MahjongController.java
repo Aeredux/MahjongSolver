@@ -77,7 +77,8 @@ public class MahjongController {
                 request.getHand() != null ? request.getHand() : List.of(),
                 request.getDrawnTile(),
                 currentShanten,
-                suggestions
+                suggestions,
+                request.getDiscardTiles()
             );
 
             return ResponseEntity.ok(response);

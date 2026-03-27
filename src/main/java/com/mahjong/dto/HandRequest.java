@@ -14,4 +14,5 @@ public class HandRequest {
     private List<TileType> hand;
     private TileType drawnTile;
     private List<PlayerDiscardsDTO> opponents;
+    private List<TileType> discardTiles;
 }

@@ -39,6 +39,9 @@ public class GameHistory {
     @Column(name = "suggestion_count", nullable = false)
     private int suggestionCount;
 
+    @Column(name = "discard_tiles")
+    private String discardTiles;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

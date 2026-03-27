@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Clock, RefreshCw } from 'lucide-react'
+import { Clock, RefreshCw, Upload } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,7 +28,11 @@ function parseTiles(raw: string): string {
     .join(' ')
 }
 
-export function GameHistory() {
+interface GameHistoryProps {
+  onLoadEntry?: (hand: TileType[], drawnTile: TileType | null, discardTiles: TileType[]) => void
+}
+
+export function GameHistory({ onLoadEntry }: GameHistoryProps) {
   const [entries, setEntries] = useState<GameHistoryEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,6 +53,18 @@ export function GameHistory() {
   }
 
   useEffect(() => { void load() }, [])
+
+  function handleLoadEntry(entry: GameHistoryEntry) {
+    if (!onLoadEntry) return
+    
+    const handTiles: TileType[] = entry.hand_tiles.split(',').filter(t => t) as TileType[]
+    const drawnTile: TileType | null = entry.drawn_tile as TileType | null
+    const discardTiles: TileType[] = entry.discard_tiles 
+      ? entry.discard_tiles.split(',').filter(t => t) as TileType[]
+      : []
+    
+    onLoadEntry(handTiles, drawnTile, discardTiles)
+  }
 
   return (
     <div className="space-y-4">
@@ -86,6 +102,17 @@ export function GameHistory() {
                 <Badge variant={shantenVariant(entry.current_shanten)} className="ml-auto">
                   {shantenLabel(entry.current_shanten)}
                 </Badge>
+                {onLoadEntry && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleLoadEntry(entry)}
+                    className="h-6 px-2 text-xs border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    <Upload className="w-3 h-3 mr-1" />
+                    Load
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="py-2 px-4 pt-0 space-y-1 text-xs">
@@ -99,6 +126,12 @@ export function GameHistory() {
                   <span className="font-mono text-foreground">
                     {TILE_DISPLAY_NAMES[entry.drawn_tile as TileType] ?? entry.drawn_tile}
                   </span>
+                </div>
+              )}
+              {entry.discard_tiles && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-20 flex-shrink-0">Discards</span>
+                  <span className="font-mono text-foreground">{parseTiles(entry.discard_tiles)}</span>
                 </div>
               )}
               {entry.best_discard && (

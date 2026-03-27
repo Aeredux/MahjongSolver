@@ -24,12 +24,17 @@ public class GameHistoryService {
     private GameHistoryRepository gameHistoryRepository;
 
     public GameHistory saveGameHistory(List<TileType> hand, TileType drawnTile,
-                                       int currentShanten, List<MoveSuggestion> suggestions) {
+                                       int currentShanten, List<MoveSuggestion> suggestions,
+                                       List<TileType> discardTiles) {
         GameHistory record = new GameHistory();
         record.setHandTiles(hand.stream().map(Enum::name).collect(Collectors.joining(",")));
         record.setDrawnTile(drawnTile != null ? drawnTile.name() : null);
         record.setCurrentShanten(currentShanten);
         record.setSuggestionCount(suggestions.size());
+        
+        if (discardTiles != null && !discardTiles.isEmpty()) {
+            record.setDiscardTiles(discardTiles.stream().map(Enum::name).collect(Collectors.joining(",")));
+        }
 
         if (!suggestions.isEmpty()) {
             MoveSuggestion best = suggestions.get(0);
@@ -38,8 +43,9 @@ public class GameHistoryService {
         }
 
         GameHistory saved = gameHistoryRepository.save(record);
-        logger.debug("Saved game history record id={}, shanten={}, bestDiscard={}",
-                saved.getId(), saved.getCurrentShanten(), saved.getBestDiscard());
+        logger.debug("Saved game history record id={}, shanten={}, bestDiscard={}, discardCount={}",
+                saved.getId(), saved.getCurrentShanten(), saved.getBestDiscard(), 
+                discardTiles != null ? discardTiles.size() : 0);
         return saved;
     }
 
