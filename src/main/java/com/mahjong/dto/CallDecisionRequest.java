@@ -2,6 +2,7 @@ package com.mahjong.dto;
 
 import com.mahjong.model.CallType;
 import com.mahjong.model.TileType;
+import com.mahjong.model.Wind;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,4 +20,7 @@ public class CallDecisionRequest {
     private boolean isMenzen;
     private int playerScore;
     private boolean isOpenKan;
+    private List<PlayerDiscardsDTO> opponents;
+    private Wind seatWind;
+    private Wind roundWind;
 }

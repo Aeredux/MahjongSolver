@@ -2,6 +2,22 @@
 
 This document tracks the development progress, decisions, and changes made during implementation.
 
+## 2026-03-27
+
+### DTO Update: Accept discards, seatWind, roundWind in evaluate-call
+**Status**: Complete
+**Date**: 2026-03-27
+
+**Changes**:
+- Added three new optional fields to `CallDecisionRequest`:
+  - `opponents`: `List<PlayerDiscardsDTO>` — reuses existing DTO from `HandRequest`
+  - `seatWind`: `Wind` — player's seat wind
+  - `roundWind`: `Wind` — current round wind
+- These fields are accepted and deserialized but **not yet used** in call decision logic (future enhancement)
+- All existing tests pass; no breaking changes
+
+---
+
 ## 2026-03-24
 
 ### Bug Fix: Shanten and Ukeire Calculation (Phase 6 debugging)
