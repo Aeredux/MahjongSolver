@@ -52,25 +52,25 @@ export const TILE_DISPLAY_NAMES: Record<TileType, string> = {
 }
 
 export interface MoveSuggestion {
-  discardTile: TileType
-  shantenAfterDiscard: number
+  discard_tile: TileType
+  shanten_after_discard: number
   confidence: number
   reasoning: string
-  ukeireCount: number
+  ukeire_count: number
 }
 
 export interface MoveSuggestionResponse {
   suggestions: MoveSuggestion[]
-  currentShanten: number
+  current_shanten: number
 }
 
 export interface GameHistoryEntry {
   id: number
-  createdAt: string
-  handTiles: string
-  drawnTile: string | null
-  currentShanten: number
-  bestDiscard: string | null
-  bestConfidence: number
-  suggestionCount: number
+  created_at: string
+  hand_tiles: string
+  drawn_tile: string | null
+  current_shanten: number
+  best_discard: string | null
+  best_confidence: number
+  suggestion_count: number
 }

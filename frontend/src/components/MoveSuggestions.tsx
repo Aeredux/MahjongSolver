@@ -29,14 +29,14 @@ function confidenceColor(c: number): string {
 }
 
 export function MoveSuggestions({ response }: MoveSuggestionsProps) {
-  const { suggestions, currentShanten } = response
+  const { suggestions, current_shanten } = response
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">Current hand:</span>
-        <Badge variant={shantenBadgeVariant(currentShanten)}>
-          {shantenLabel(currentShanten)}
+        <Badge variant={shantenBadgeVariant(current_shanten)}>
+          {shantenLabel(current_shanten)}
         </Badge>
       </div>
 
@@ -50,7 +50,7 @@ export function MoveSuggestions({ response }: MoveSuggestionsProps) {
         <div className="space-y-2">
           {suggestions.map((s, i) => (
             <Card
-              key={`${s.discardTile}-${i}`}
+              key={`${s.discard_tile}-${i}`}
               className={cn(
                 'transition-colors',
                 i === 0 && 'border-primary/50 bg-primary/5'
@@ -62,12 +62,12 @@ export function MoveSuggestions({ response }: MoveSuggestionsProps) {
                   <span className="text-muted-foreground font-normal w-5 text-right">{i + 1}.</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Discard</span>
-                    <Tile tile={s.discardTile as TileType} size="sm" highlighted={i === 0} />
-                    <span className="font-semibold">{TILE_DISPLAY_NAMES[s.discardTile as TileType]}</span>
+                    <Tile tile={s.discard_tile as TileType} size="sm" highlighted={i === 0} />
+                    <span className="font-semibold">{TILE_DISPLAY_NAMES[s.discard_tile as TileType]}</span>
                   </div>
                   <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                    <Badge variant={shantenBadgeVariant(s.shantenAfterDiscard)}>
-                      {shantenLabel(s.shantenAfterDiscard)}
+                    <Badge variant={shantenBadgeVariant(s.shanten_after_discard)}>
+                      {shantenLabel(s.shanten_after_discard)}
                     </Badge>
                   </div>
                 </CardTitle>
@@ -90,7 +90,7 @@ export function MoveSuggestions({ response }: MoveSuggestionsProps) {
                   <span className="text-xs text-muted-foreground w-20 flex-shrink-0">Ukeire</span>
                   <span className="text-xs font-semibold text-foreground flex items-center gap-1">
                     <TrendingDown className="w-3 h-3 text-muted-foreground" />
-                    {s.ukeireCount} useful tiles
+                    {s.ukeire_count} useful tiles
                   </span>
                 </div>
 

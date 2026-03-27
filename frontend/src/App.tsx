@@ -21,7 +21,7 @@ function App() {
       const res = await fetch('/api/suggest-move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hand, drawnTile }),
+        body: JSON.stringify({ hand, drawn_tile: drawnTile }),
       })
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data: MoveSuggestionResponse = await res.json()

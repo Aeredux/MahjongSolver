@@ -16,6 +16,20 @@ This document tracks the development progress, decisions, and changes made durin
 - These fields are accepted and deserialized but **not yet used** in call decision logic (future enhancement)
 - All existing tests pass; no breaking changes
 
+### Global snake_case JSON naming
+**Status**: Complete
+**Date**: 2026-03-27
+
+**Changes**:
+- Added `spring.jackson.property-naming-strategy=SNAKE_CASE` to `application.properties`
+- All JSON request/response field names are now snake_case (e.g. `called_tile`, `call_type`, `drawn_tile`, `current_shanten`, `discard_tile`, `shanten_after_discard`, `ukeire_count`, `should_call`, `shanten_before`, `shanten_after`, `player_score`, `open_kan`, `seat_wind`, `round_wind`)
+- Renamed `CallDecisionRequest` fields `isMenzen` → `menzen`, `isOpenKan` → `openKan` to avoid Lombok boolean `is`-prefix causing Jackson to strip the prefix (JSON fields: `menzen`, `open_kan`)
+- Updated `MahjongControllerTest` jsonPath assertions to match new field names
+- Updated frontend TypeScript interfaces (`mahjong.ts`) and component property access (`MoveSuggestions.tsx`, `GameHistory.tsx`, `App.tsx`) to use snake_case
+- Updated `api-guide.html` — all field names, examples, and docs now use snake_case; also documented the new `opponents`, `seat_wind`, `round_wind` fields for evaluate-call
+- Rebuilt frontend (`npm run build`)
+- All 113 backend tests pass; frontend builds cleanly
+
 ---
 
 ## 2026-03-24

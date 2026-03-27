@@ -82,39 +82,39 @@ export function GameHistory() {
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Clock className="w-3 h-3 text-muted-foreground" />
-                <span className="text-muted-foreground font-normal">{formatDate(entry.createdAt)}</span>
-                <Badge variant={shantenVariant(entry.currentShanten)} className="ml-auto">
-                  {shantenLabel(entry.currentShanten)}
+                <span className="text-muted-foreground font-normal">{formatDate(entry.created_at)}</span>
+                <Badge variant={shantenVariant(entry.current_shanten)} className="ml-auto">
+                  {shantenLabel(entry.current_shanten)}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="py-2 px-4 pt-0 space-y-1 text-xs">
               <div className="flex gap-2">
                 <span className="text-muted-foreground w-20 flex-shrink-0">Hand</span>
-                <span className="font-mono text-foreground">{parseTiles(entry.handTiles)}</span>
+                <span className="font-mono text-foreground">{parseTiles(entry.hand_tiles)}</span>
               </div>
-              {entry.drawnTile && (
+              {entry.drawn_tile && (
                 <div className="flex gap-2">
                   <span className="text-muted-foreground w-20 flex-shrink-0">Drawn</span>
                   <span className="font-mono text-foreground">
-                    {TILE_DISPLAY_NAMES[entry.drawnTile as TileType] ?? entry.drawnTile}
+                    {TILE_DISPLAY_NAMES[entry.drawn_tile as TileType] ?? entry.drawn_tile}
                   </span>
                 </div>
               )}
-              {entry.bestDiscard && (
+              {entry.best_discard && (
                 <div className="flex gap-2">
                   <span className="text-muted-foreground w-20 flex-shrink-0">Best discard</span>
                   <span className="font-mono text-primary font-semibold">
-                    {TILE_DISPLAY_NAMES[entry.bestDiscard as TileType] ?? entry.bestDiscard}
+                    {TILE_DISPLAY_NAMES[entry.best_discard as TileType] ?? entry.best_discard}
                   </span>
                   <span className="text-muted-foreground">
-                    ({(entry.bestConfidence * 100).toFixed(0)}% confidence)
+                    ({(entry.best_confidence * 100).toFixed(0)}% confidence)
                   </span>
                 </div>
               )}
               <div className="flex gap-2">
                 <span className="text-muted-foreground w-20 flex-shrink-0">Suggestions</span>
-                <span>{entry.suggestionCount}</span>
+                <span>{entry.suggestion_count}</span>
               </div>
             </CardContent>
           </Card>

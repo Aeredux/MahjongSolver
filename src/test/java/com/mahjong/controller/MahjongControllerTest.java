@@ -55,10 +55,10 @@ class MahjongControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.currentShanten").exists())
+            .andExpect(jsonPath("$.current_shanten").exists())
             .andExpect(jsonPath("$.suggestions").isArray())
-            .andExpect(jsonPath("$.suggestions[0].discardTile").exists())
-            .andExpect(jsonPath("$.suggestions[0].shantenAfterDiscard").exists())
+            .andExpect(jsonPath("$.suggestions[0].discard_tile").exists())
+            .andExpect(jsonPath("$.suggestions[0].shanten_after_discard").exists())
             .andExpect(jsonPath("$.suggestions[0].confidence").exists())
             .andExpect(jsonPath("$.suggestions[0].reasoning").exists());
     }
@@ -82,8 +82,8 @@ class MahjongControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.callType").value("RON"))
-            .andExpect(jsonPath("$.shouldCall").value(true))
+            .andExpect(jsonPath("$.call_type").value("RON"))
+            .andExpect(jsonPath("$.should_call").value(true))
             .andExpect(jsonPath("$.confidence").value(1.0))
             .andExpect(jsonPath("$.reasoning").exists());
     }
@@ -108,8 +108,8 @@ class MahjongControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.callType").value("RIICHI"))
-            .andExpect(jsonPath("$.shouldCall").value(true))
+            .andExpect(jsonPath("$.call_type").value("RIICHI"))
+            .andExpect(jsonPath("$.should_call").value(true))
             .andExpect(jsonPath("$.reasoning").exists());
     }
 
@@ -132,8 +132,8 @@ class MahjongControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.callType").value("PON"))
-            .andExpect(jsonPath("$.shouldCall").exists())
+            .andExpect(jsonPath("$.call_type").value("PON"))
+            .andExpect(jsonPath("$.should_call").exists())
             .andExpect(jsonPath("$.reasoning").exists());
     }
 
@@ -157,8 +157,8 @@ class MahjongControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.callType").value("CHI"))
-            .andExpect(jsonPath("$.shouldCall").exists())
+            .andExpect(jsonPath("$.call_type").value("CHI"))
+            .andExpect(jsonPath("$.should_call").exists())
             .andExpect(jsonPath("$.reasoning").exists());
     }
 

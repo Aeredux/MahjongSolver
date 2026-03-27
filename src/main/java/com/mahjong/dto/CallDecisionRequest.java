@@ -17,9 +17,9 @@ public class CallDecisionRequest {
     private TileType calledTile;
     private CallType callType;
     private List<TileType> sequenceTiles;
-    private boolean isMenzen;
+    private boolean menzen;
     private int playerScore;
-    private boolean isOpenKan;
+    private boolean openKan;
     private List<PlayerDiscardsDTO> opponents;
     private Wind seatWind;
     private Wind roundWind;

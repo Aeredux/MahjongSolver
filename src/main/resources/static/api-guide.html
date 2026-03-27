@@ -71,13 +71,13 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 <h4>Request Body</h4>
 <pre><code>{
   "hand": ["&lt;TileType&gt;", ...],
-  "drawnTile": "&lt;TileType&gt; or null"
+  "drawn_tile": "&lt;TileType&gt; or null"
 }</code></pre>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
-  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>13 or 14 tiles in the player's hand. If 14 tiles and <code>drawnTile</code> is set, the drawn tile should be included in <code>hand</code>.</td></tr>
-  <tr><td><code>drawnTile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
+  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>13 or 14 tiles in the player's hand. If 14 tiles and <code>drawn_tile</code> is set, the drawn tile should be included in <code>hand</code>.</td></tr>
+  <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, genbutsu detection, and tsumogiri tenpai danger. See below.</td></tr>
 </table>
 
@@ -98,46 +98,46 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 
 <h4>Response Body</h4>
 <pre><code>{
-  "currentShanten": 0,
+  "current_shanten": 0,
   "suggestions": [
     {
-      "discardTile": "WHITE",
-      "shantenAfterDiscard": 0,
+      "discard_tile": "WHITE",
+      "shanten_after_discard": 0,
       "confidence": 1.0,
       "reasoning": "Discarding WHITE keeps you at tenpai (0-shanten). 8 tiles can improve your hand.",
-      "ukeireCount": 8
+      "ukeire_count": 8
     },
     {
-      "discardTile": "S1",
-      "shantenAfterDiscard": 1,
+      "discard_tile": "S1",
+      "shanten_after_discard": 1,
       "confidence": 0.5,
       "reasoning": "Discarding S1 worsens shanten from 0 to 1.",
-      "ukeireCount": 24
+      "ukeire_count": 24
     }
   ]
 }</code></pre>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>currentShanten</code></td><td>int</td><td>Shanten of the current hand. -1 = complete, 0 = tenpai, 1 = 1-shanten, etc.</td></tr>
+  <tr><td><code>current_shanten</code></td><td>int</td><td>Shanten of the current hand. -1 = complete, 0 = tenpai, 1 = 1-shanten, etc.</td></tr>
   <tr><td><code>suggestions</code></td><td>array</td><td>All possible discards, sorted best-first.</td></tr>
-  <tr><td><code>suggestions[].discardTile</code></td><td>TileType string</td><td>The tile to discard.</td></tr>
-  <tr><td><code>suggestions[].shantenAfterDiscard</code></td><td>int</td><td>Shanten after discarding this tile.</td></tr>
+  <tr><td><code>suggestions[].discard_tile</code></td><td>TileType string</td><td>The tile to discard.</td></tr>
+  <tr><td><code>suggestions[].shanten_after_discard</code></td><td>int</td><td>Shanten after discarding this tile.</td></tr>
   <tr><td><code>suggestions[].confidence</code></td><td>float 0.0–1.0</td><td>1.0 = best possible discard; 0.5 = suboptimal; 0.0 = worsens shanten.</td></tr>
   <tr><td><code>suggestions[].reasoning</code></td><td>string</td><td>Human-readable explanation.</td></tr>
-  <tr><td><code>suggestions[].ukeireCount</code></td><td>int</td><td>Number of tiles remaining in the wall that would improve the hand after this discard.</td></tr>
+  <tr><td><code>suggestions[].ukeire_count</code></td><td>int</td><td>Number of tiles remaining in the wall that would improve the hand after this discard.</td></tr>
 </table>
 
 <h4>Example — basic (no opponent data)</h4>
 <pre><code>{
   "hand": ["S1","S2","S3","S4","S5","S6","S7","S8","S9","M2","M3","WHITE","WHITE","WHITE"],
-  "drawnTile": null
+  "drawn_tile": null
 }</code></pre>
 
 <h4>Example — with opponent discards (discard-aware ukeire + genbutsu)</h4>
 <pre><code>{
   "hand": ["M1","M2","M3","M4","M5","M6","P1","P2","P3","S7","S8","S9","EAST"],
-  "drawnTile": null,
+  "drawn_tile": null,
   "opponents": [
     {
       "wind": "EAST",
@@ -179,23 +179,29 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 <h4>Request Body</h4>
 <pre><code>{
   "hand": ["&lt;TileType&gt;", ...],
-  "calledTile": "&lt;TileType&gt;",
-  "callType": "&lt;CallType&gt;",
-  "sequenceTiles": ["&lt;TileType&gt;", "&lt;TileType&gt;"],
-  "isMenzen": true,
-  "playerScore": 25000,
-  "isOpenKan": false
+  "called_tile": "&lt;TileType&gt;",
+  "call_type": "&lt;CallType&gt;",
+  "sequence_tiles": ["&lt;TileType&gt;", "&lt;TileType&gt;"],
+  "menzen": true,
+  "player_score": 25000,
+  "open_kan": false,
+  "opponents": [],
+  "seat_wind": "EAST",
+  "round_wind": "EAST"
 }</code></pre>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
   <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Current tiles in hand (not including the called tile).</td></tr>
-  <tr><td><code>calledTile</code></td><td>TileType string</td><td>Yes</td><td>The tile being considered for the call.</td></tr>
-  <tr><td><code>callType</code></td><td>string</td><td>Yes</td><td>One of: <code>CHI</code>, <code>PON</code>, <code>KAN</code>, <code>RON</code>, <code>RIICHI</code>, <code>TSUMO</code></td></tr>
-  <tr><td><code>sequenceTiles</code></td><td>array of 2 TileType strings</td><td>CHI only</td><td>The two tiles in hand that form a sequence with <code>calledTile</code>. E.g. calling chi on M3 with M1M2 in hand: <code>["M1","M2"]</code>.</td></tr>
-  <tr><td><code>isMenzen</code></td><td>boolean</td><td>No</td><td>Whether the hand is currently closed. Default: true.</td></tr>
-  <tr><td><code>playerScore</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000). Default: 25000.</td></tr>
-  <tr><td><code>isOpenKan</code></td><td>boolean</td><td>No</td><td>Whether the kan would be open. Default: false.</td></tr>
+  <tr><td><code>called_tile</code></td><td>TileType string</td><td>Yes</td><td>The tile being considered for the call.</td></tr>
+  <tr><td><code>call_type</code></td><td>string</td><td>Yes</td><td>One of: <code>CHI</code>, <code>PON</code>, <code>KAN</code>, <code>RON</code>, <code>RIICHI</code>, <code>TSUMO</code></td></tr>
+  <tr><td><code>sequence_tiles</code></td><td>array of 2 TileType strings</td><td>CHI only</td><td>The two tiles in hand that form a sequence with <code>called_tile</code>. E.g. calling chi on M3 with M1M2 in hand: <code>["M1","M2"]</code>.</td></tr>
+  <tr><td><code>menzen</code></td><td>boolean</td><td>No</td><td>Whether the hand is currently closed. Default: true.</td></tr>
+  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000). Default: 25000.</td></tr>
+  <tr><td><code>open_kan</code></td><td>boolean</td><td>No</td><td>Whether the kan would be open. Default: false.</td></tr>
+  <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information (same format as suggest-move).</td></tr>
+  <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
+  <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
 </table>
 
 <h4>CallType Values</h4>
@@ -211,41 +217,41 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 
 <h4>Response Body</h4>
 <pre><code>{
-  "callType": "PON",
-  "shouldCall": true,
+  "call_type": "PON",
+  "should_call": true,
   "confidence": 0.8,
   "reasoning": "Pon improves hand efficiency. Shanten goes from 2 to 1.",
-  "shantenBefore": 2,
-  "shantenAfter": 1
+  "shanten_before": 2,
+  "shanten_after": 1
 }</code></pre>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>callType</code></td><td>string</td><td>Echoes back the call type.</td></tr>
-  <tr><td><code>shouldCall</code></td><td>boolean</td><td>true = recommended to make the call.</td></tr>
+  <tr><td><code>call_type</code></td><td>string</td><td>Echoes back the call type.</td></tr>
+  <tr><td><code>should_call</code></td><td>boolean</td><td>true = recommended to make the call.</td></tr>
   <tr><td><code>confidence</code></td><td>float 0.0–1.0</td><td>Confidence in the recommendation.</td></tr>
   <tr><td><code>reasoning</code></td><td>string</td><td>Explanation.</td></tr>
-  <tr><td><code>shantenBefore</code></td><td>int</td><td>Shanten before the call.</td></tr>
-  <tr><td><code>shantenAfter</code></td><td>int</td><td>Shanten after the call (if made).</td></tr>
+  <tr><td><code>shanten_before</code></td><td>int</td><td>Shanten before the call.</td></tr>
+  <tr><td><code>shanten_after</code></td><td>int</td><td>Shanten after the call (if made).</td></tr>
 </table>
 
 <h4>Example — evaluate ron</h4>
 <pre><code>{
   "hand": ["M1","M2","M3","M4","M5","M6","P1","P2","P3","S7","S8","S9","EAST"],
-  "calledTile": "EAST",
-  "callType": "RON",
-  "isMenzen": true,
-  "playerScore": 25000
+  "called_tile": "EAST",
+  "call_type": "RON",
+  "menzen": true,
+  "player_score": 25000
 }</code></pre>
 
 <h4>Example — evaluate chi</h4>
 <pre><code>{
   "hand": ["M3","M4","P1","P2","P3","S1","S2","S3","S7","S8","S9","EAST","EAST"],
-  "calledTile": "M2",
-  "callType": "CHI",
-  "sequenceTiles": ["M3","M4"],
-  "isMenzen": true,
-  "playerScore": 25000
+  "called_tile": "M2",
+  "call_type": "CHI",
+  "sequence_tiles": ["M3","M4"],
+  "menzen": true,
+  "player_score": 25000
 }</code></pre>
 
 <hr>
@@ -263,16 +269,16 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 <h4>Request Body</h4>
 <pre><code>{
   "hand": ["&lt;TileType&gt;", ...],
-  "discardTile": "&lt;TileType&gt;",
-  "drawnTile": "&lt;TileType&gt; or null",
+  "discard_tile": "&lt;TileType&gt;",
+  "drawn_tile": "&lt;TileType&gt; or null",
   "riichi": false
 }</code></pre>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
   <tr><td><code>hand</code></td><td>array of TileType</td><td>Yes</td><td>The player's current hand (13 or 14 tiles).</td></tr>
-  <tr><td><code>discardTile</code></td><td>TileType string</td><td>Yes</td><td>The tile the player wants to discard.</td></tr>
-  <tr><td><code>drawnTile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Required to validate riichi tsumogiri rule.</td></tr>
+  <tr><td><code>discard_tile</code></td><td>TileType string</td><td>Yes</td><td>The tile the player wants to discard.</td></tr>
+  <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Required to validate riichi tsumogiri rule.</td></tr>
   <tr><td><code>riichi</code></td><td>boolean</td><td>No</td><td>Whether the player is in riichi. If true, only the drawn tile may be discarded.</td></tr>
 </table>
 
@@ -291,13 +297,13 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 <pre><code>[
   {
     "id": 1,
-    "handTiles": "S1,S2,S3,M2,M3,WHITE,WHITE,WHITE,S4,S5,S6,S7,S8,S9",
-    "drawnTile": null,
-    "currentShanten": 0,
-    "bestDiscard": "WHITE",
-    "bestConfidence": 1.0,
-    "suggestionCount": 14,
-    "createdAt": "2026-03-24T17:10:58"
+    "hand_tiles": "S1,S2,S3,M2,M3,WHITE,WHITE,WHITE,S4,S5,S6,S7,S8,S9",
+    "drawn_tile": null,
+    "current_shanten": 0,
+    "best_discard": "WHITE",
+    "best_confidence": 1.0,
+    "suggestion_count": 14,
+    "created_at": "2026-03-24T17:10:58"
   }
 ]</code></pre>
 
@@ -325,7 +331,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <li>All tile type strings are <strong>case-sensitive</strong> — use uppercase (<code>M1</code>, not <code>m1</code>).</li>
   <li>A 14-tile hand is typical after drawing; the API evaluates which tile to discard.</li>
   <li>A 13-tile hand is also accepted for pre-draw analysis.</li>
-  <li><code>drawnTile</code> is informational — include it in <code>hand</code> if you want it evaluated as a discard candidate.</li>
+  <li><code>drawn_tile</code> is informational — include it in <code>hand</code> if you want it evaluated as a discard candidate.</li>
   <li><code>suggestions</code> is always sorted best-first. Use <code>suggestions[0]</code> for the single best recommended discard.</li>
 </ul>
 
