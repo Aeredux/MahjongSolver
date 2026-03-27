@@ -108,6 +108,8 @@ public class MahjongController {
                     break;
 
                 case TSUMO:
+                    Tile tsumoTile = new Tile(request.getCalledTile());
+                    hand.add(tsumoTile);
                     decision = callDecisionService.evaluateTsumo(hand);
                     break;
 
@@ -132,6 +134,9 @@ public class MahjongController {
 
                 case KAN:
                     Tile kanTile = new Tile(request.getCalledTile());
+                    if (!request.isOpenKan()) {
+                        hand.add(kanTile);
+                    }
                     decision = callDecisionService.evaluateKan(hand, kanTile, request.isOpenKan());
                     break;
 

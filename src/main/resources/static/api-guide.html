@@ -28,6 +28,15 @@
 <p>This server provides Japanese Riichi Mahjong move suggestions and call-decision evaluation.
 All requests and responses use JSON. All tile types are passed as strings (see Tile Reference below).</p>
 
+<h3>Hand Size Convention</h3>
+<p><strong>Always send 13 tiles in the <code>hand</code> array.</strong> The drawn/called tile is always provided as a separate field:</p>
+<ul>
+  <li><code>suggest-move</code>: <code>hand</code> (13 tiles) + optional <code>drawn_tile</code></li>
+  <li><code>evaluate-call</code>: <code>hand</code> (13 tiles) + <code>called_tile</code></li>
+  <li><code>validate-move</code>: <code>hand</code> (13 tiles) + optional <code>drawn_tile</code></li>
+</ul>
+<p>The server automatically adds the drawn/called tile to the hand internally when needed (e.g., for TSUMO and closed KAN evaluations).</p>
+
 <hr>
 
 <h2>Tile Reference</h2>
@@ -76,7 +85,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
-  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>13 or 14 tiles in the player's hand. If 14 tiles and <code>drawn_tile</code> is set, the drawn tile should be included in <code>hand</code>.</td></tr>
+  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Always 13 tiles in your closed hand. The drawn tile (if any) is provided separately via <code>drawn_tile</code>.</td></tr>
   <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, genbutsu detection, and tsumogiri tenpai danger. See below.</td></tr>
 </table>
@@ -192,7 +201,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
-  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Current tiles in hand (not including the called tile).</td></tr>
+  <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Always 13 tiles in your closed hand. The called tile is provided separately via <code>called_tile</code>.</td></tr>
   <tr><td><code>called_tile</code></td><td>TileType string</td><td>Yes</td><td>The tile being considered for the call.</td></tr>
   <tr><td><code>call_type</code></td><td>string</td><td>Yes</td><td>One of: <code>CHI</code>, <code>PON</code>, <code>KAN</code>, <code>RON</code>, <code>RIICHI</code>, <code>TSUMO</code></td></tr>
   <tr><td><code>sequence_tiles</code></td><td>array of 2 TileType strings</td><td>CHI only</td><td>The two tiles in hand that form a sequence with <code>called_tile</code>. E.g. calling chi on M3 with M1M2 in hand: <code>["M1","M2"]</code>.</td></tr>
@@ -276,7 +285,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 
 <table>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
-  <tr><td><code>hand</code></td><td>array of TileType</td><td>Yes</td><td>The player's current hand (13 or 14 tiles).</td></tr>
+  <tr><td><code>hand</code></td><td>array of TileType</td><td>Yes</td><td>Always 13 tiles in your closed hand. The drawn tile (if any) is provided separately via <code>drawn_tile</code>.</td></tr>
   <tr><td><code>discard_tile</code></td><td>TileType string</td><td>Yes</td><td>The tile the player wants to discard.</td></tr>
   <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Required to validate riichi tsumogiri rule.</td></tr>
   <tr><td><code>riichi</code></td><td>boolean</td><td>No</td><td>Whether the player is in riichi. If true, only the drawn tile may be discarded.</td></tr>
@@ -329,8 +338,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
 <h2>Integration Notes</h2>
 <ul>
   <li>All tile type strings are <strong>case-sensitive</strong> — use uppercase (<code>M1</code>, not <code>m1</code>).</li>
-  <li>A 14-tile hand is typical after drawing; the API evaluates which tile to discard.</li>
-  <li>A 13-tile hand is also accepted for pre-draw analysis.</li>
+  <li>Always send 13 tiles in <code>hand</code>. The drawn tile is sent separately via <code>drawn_tile</code>.</li>
   <li><code>drawn_tile</code> is informational — include it in <code>hand</code> if you want it evaluated as a discard candidate.</li>
   <li><code>suggestions</code> is always sorted best-first. Use <code>suggestions[0]</code> for the single best recommended discard.</li>
 </ul>

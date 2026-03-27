@@ -30,6 +30,18 @@ This document tracks the development progress, decisions, and changes made durin
 - Rebuilt frontend (`npm run build`)
 - All 113 backend tests pass; frontend builds cleanly
 
+### Standardize hand size convention (always 13 tiles)
+**Status**: Complete
+**Date**: 2026-03-27
+
+**Changes**:
+- **Controller**: For TSUMO calls, controller now adds `called_tile` to hand internally before evaluating (13→14 tiles)
+- **Controller**: For closed KAN calls, controller adds `called_tile` to hand internally when `open_kan=false` (13→14 tiles)
+- **API docs**: Added clear "Hand Size Convention" section specifying `hand` = always 13 tiles, drawn/called tile always separate
+- Updated all endpoint descriptions in `api-guide.html` to reflect the 13-tile convention
+- All existing tests already used 13 tiles; no test changes needed
+- All 113 backend tests pass
+
 ---
 
 ## 2026-03-24
