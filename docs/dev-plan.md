@@ -68,6 +68,7 @@
   - [x] Add `tsumogiri` boolean flag to `DiscardedTileDTO` model (top-deck discard vs held)
   - [x] Update `HandRequest` DTO to accept `List<PlayerDiscardsDTO>` per opponent
   - [x] Implement tile counting: subtract all visible discards from remaining-tile counts when calculating ukeire probabilities
+  - [x] Fix: player's own `discard_tiles` now also subtracted from visible counts in ukeire calculation
   - [x] Implement genbutsu detection: flag tiles present in a riichi opponent's discard pile as safe against that player's ron
   - [x] Implement tsumogiri pattern reading: track consecutive tsumogiri discards per opponent to estimate tenpai danger level
   - [x] Surface discard-based reasoning in `MoveSuggestion.reasoning` (e.g. "Genbutsu safe vs EAST", "Only 1 copy left in wall")

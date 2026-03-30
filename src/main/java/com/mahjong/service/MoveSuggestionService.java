@@ -25,10 +25,14 @@ public class MoveSuggestionService {
     private static final int MAX_SHANTEN = 8;
 
     public List<MoveSuggestion> suggestMoves(List<Tile> hand) {
-        return suggestMoves(hand, Collections.emptyList());
+        return suggestMoves(hand, Collections.emptyList(), Collections.emptyList());
     }
 
     public List<MoveSuggestion> suggestMoves(List<Tile> hand, List<PlayerDiscardsDTO> opponents) {
+        return suggestMoves(hand, opponents, Collections.emptyList());
+    }
+
+    public List<MoveSuggestion> suggestMoves(List<Tile> hand, List<PlayerDiscardsDTO> opponents, List<TileType> ownDiscards) {
         if (hand == null || hand.isEmpty()) {
             logger.warn("Cannot suggest moves for empty hand");
             return Collections.emptyList();
@@ -57,7 +61,8 @@ public class MoveSuggestionService {
             .collect(Collectors.toSet());
 
         List<PlayerDiscardsDTO> safeOpponents = opponents != null ? opponents : Collections.emptyList();
-        Map<TileType, Integer> visibleCounts = buildVisibleCounts(safeOpponents);
+        List<TileType> safeOwnDiscards = ownDiscards != null ? ownDiscards : Collections.emptyList();
+        Map<TileType, Integer> visibleCounts = buildVisibleCounts(safeOpponents, safeOwnDiscards);
         Map<Wind, Set<TileType>> genbutsuBySeat = buildGenbutsuMap(safeOpponents);
         Map<Wind, Integer> tenpaiDanger = buildTenpaiDanger(safeOpponents);
 
@@ -130,7 +135,7 @@ public class MoveSuggestionService {
         return ukeire;
     }
 
-    private Map<TileType, Integer> buildVisibleCounts(List<PlayerDiscardsDTO> opponents) {
+    private Map<TileType, Integer> buildVisibleCounts(List<PlayerDiscardsDTO> opponents, List<TileType> ownDiscards) {
         Map<TileType, Integer> counts = new HashMap<>();
         for (PlayerDiscardsDTO opponent : opponents) {
             if (opponent.getDiscards() != null) {
@@ -139,6 +144,11 @@ public class MoveSuggestionService {
                         counts.merge(d.getTile(), 1, Integer::sum);
                     }
                 }
+            }
+        }
+        for (TileType t : ownDiscards) {
+            if (t != null) {
+                counts.merge(t, 1, Integer::sum);
             }
         }
         return counts;

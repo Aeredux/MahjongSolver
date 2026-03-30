@@ -4,6 +4,26 @@ This document tracks the development progress, decisions, and changes made durin
 
 ## 2026-03-27
 
+### Fix: Own discard tiles now factored into ukeire calculation
+**Status**: ✅ Complete
+**Date**: 2026-03-30
+
+**Problem**: The `discard_tiles` field sent with `/api/suggest-move` was only being saved to the database history. It was never passed to `MoveSuggestionService`, so visible tile counts used for ukeire probability only included opponent discards — the player's own discarded tiles were invisible to the AI.
+
+**Root Cause**: `MahjongController` called `suggestMoves(hand, request.getOpponents())` and discarded `request.getDiscardTiles()`. `buildVisibleCounts` only iterated over opponent discard lists.
+
+**Changes**:
+- `MoveSuggestionService`: Added 3-arg overload `suggestMoves(hand, opponents, ownDiscards)`. Both existing overloads delegate to it with empty lists (backward compatible).
+- `MoveSuggestionService.buildVisibleCounts`: Now accepts own discard list and merges it into the visible tile counts used by `calculateUkeire`.
+- `GameHistoryService`: Restored 4-arg overload delegating to 5-arg version so existing tests continue to compile.
+- `MahjongController`: Extracts `request.getDiscardTiles()` and passes it as `ownDiscards` to `suggestMoves`.
+
+**Effect**: Tiles the player has already discarded are now subtracted from the remaining wall when computing ukeire counts, producing more accurate tile efficiency rankings.
+
+**Testing**: All 113 existing tests pass with no changes required.
+
+---
+
 ### Discard Tiles Storage Feature
 **Status**: ✅ Complete
 **Date**: 2026-03-27

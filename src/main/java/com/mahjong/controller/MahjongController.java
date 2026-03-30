@@ -60,7 +60,8 @@ public class MahjongController {
             }
 
             int currentShanten = shantenCalculator.calculateShanten(hand);
-            List<MoveSuggestion> suggestions = moveSuggestionService.suggestMoves(hand, request.getOpponents());
+            List<TileType> ownDiscards = request.getDiscardTiles() != null ? request.getDiscardTiles() : List.of();
+            List<MoveSuggestion> suggestions = moveSuggestionService.suggestMoves(hand, request.getOpponents(), ownDiscards);
 
             MoveSuggestionResponse response = new MoveSuggestionResponse();
             response.setCurrentShanten(currentShanten);

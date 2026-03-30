@@ -24,6 +24,11 @@ public class GameHistoryService {
     private GameHistoryRepository gameHistoryRepository;
 
     public GameHistory saveGameHistory(List<TileType> hand, TileType drawnTile,
+                                       int currentShanten, List<MoveSuggestion> suggestions) {
+        return saveGameHistory(hand, drawnTile, currentShanten, suggestions, null);
+    }
+
+    public GameHistory saveGameHistory(List<TileType> hand, TileType drawnTile,
                                        int currentShanten, List<MoveSuggestion> suggestions,
                                        List<TileType> discardTiles) {
         GameHistory record = new GameHistory();
