@@ -1,6 +1,7 @@
 package com.mahjong.service;
 
 import com.mahjong.dto.DiscardedTileDTO;
+import com.mahjong.dto.MeldDTO;
 import com.mahjong.dto.PlayerDiscardsDTO;
 import com.mahjong.model.*;
 import org.slf4j.Logger;
@@ -142,6 +143,17 @@ public class MoveSuggestionService {
                 for (DiscardedTileDTO d : opponent.getDiscards()) {
                     if (d.getTile() != null) {
                         counts.merge(d.getTile(), 1, Integer::sum);
+                    }
+                }
+            }
+            if (opponent.getMelds() != null) {
+                for (MeldDTO meld : opponent.getMelds()) {
+                    if (meld.getTiles() != null) {
+                        for (TileType tile : meld.getTiles()) {
+                            if (tile != null) {
+                                counts.merge(tile, 1, Integer::sum);
+                            }
+                        }
                     }
                 }
             }

@@ -2,6 +2,29 @@
 
 This document tracks the development progress, decisions, and changes made during implementation.
 
+## 2026-04-14
+
+### Opponent Called Melds
+**Status**: ✅ Complete
+
+**Feature**: Track opponent open melds (Chi/Pon/Kan) and count their tiles as visible when calculating ukeire probabilities.
+
+**Motivation**: When an opponent calls a Chi, Pon, or Kan, those tiles are revealed and removed from the pool of drawable tiles. Without accounting for them, the ukeire calculation over-estimates how many winning tiles remain in the wall.
+
+**Changes**:
+- `MeldDTO` (new): DTO representing a called meld — `MeldType type` + `List<TileType> tiles`.
+- `PlayerDiscardsDTO`: Added `List<MeldDTO> melds` field (backward compatible; null-safe in service).
+- `MoveSuggestionService.buildVisibleCounts`: Now iterates `opponent.getMelds()` and adds each tile in each meld to the visible-tile counts, alongside existing discard counting.
+- `MoveSuggestionServiceTest.testOpponentMeldTilesCountedAsVisible`: Unit test confirming that an opponent's Pon of WEST reduces WEST ukeire to 0 (hand: M1-M9, P1×3, S5-S7, EAST/WEST — discarding EAST normally waits for WEST ×3; with opponent WEST pon, ukeire = 0).
+- `mahjong.ts`: Added `MeldType`, `Meld`, and `Opponent` TypeScript types.
+- `OpponentMelds.tsx` (new): React component showing three opponent rows (EAST/SOUTH/WEST). Each row supports adding melds via an inline picker — Pon/Kan auto-fill on a single tile click; Chi accumulates 3 tile clicks. Existing melds are shown with a hover-to-remove button.
+- `HandInput.tsx`: Added `opponents` state (defaulting to 3 empty opponent slots), `onOpponentsChange` callback prop, and rendered `<OpponentMelds>`. Opponents reset with the rest of the form.
+- `App.tsx`: Added `opponents` state and `handleOpponentsChange`; passes `onOpponentsChange` to `HandInput`; includes opponents (filtered to those with at least one meld) in the `POST /api/suggest-move` request body.
+
+**Effect**: Any Chi/Pon/Kan called by opponents is now reflected in the ukeire count and reasoning, preventing the AI from suggesting discards towards tiles already locked in opponent hands.
+
+---
+
 ## 2026-03-27
 
 ### Fix: Own discard tiles now factored into ukeire calculation

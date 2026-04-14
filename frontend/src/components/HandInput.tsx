@@ -3,22 +3,31 @@ import { X, Send, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tile } from '@/components/Tile'
-import { TILE_GROUPS, TILE_DISPLAY_NAMES, type TileType } from '@/types/mahjong'
+import { OpponentMelds } from '@/components/OpponentMelds'
+import { TILE_GROUPS, TILE_DISPLAY_NAMES, type TileType, type Opponent } from '@/types/mahjong'
 import { cn } from '@/lib/utils'
+
+const DEFAULT_OPPONENTS: Opponent[] = [
+  { wind: 'EAST', melds: [] },
+  { wind: 'SOUTH', melds: [] },
+  { wind: 'WEST', melds: [] },
+]
 
 interface HandInputProps {
   onSubmit: (hand: TileType[], drawnTile: TileType | null) => void
   onDiscardTilesChange?: (discardTiles: TileType[]) => void
+  onOpponentsChange?: (opponents: Opponent[]) => void
   isLoading: boolean
   loadedHand?: { hand: TileType[], drawnTile: TileType | null, discardTiles: TileType[] } | null
 }
 
 const MAX_HAND = 14
 
-export function HandInput({ onSubmit, onDiscardTilesChange, isLoading, loadedHand }: HandInputProps) {
+export function HandInput({ onSubmit, onDiscardTilesChange, onOpponentsChange, isLoading, loadedHand }: HandInputProps) {
   const [hand, setHand] = useState<TileType[]>([])
   const [drawnTileIndex, setDrawnTileIndex] = useState<number | null>(null)
   const [discardList, setDiscardList] = useState<TileType[]>([])
+  const [opponents, setOpponents] = useState<Opponent[]>(DEFAULT_OPPONENTS)
 
   useEffect(() => {
     if (loadedHand) {
@@ -32,6 +41,12 @@ export function HandInput({ onSubmit, onDiscardTilesChange, isLoading, loadedHan
       onDiscardTilesChange(discardList)
     }
   }, [discardList, onDiscardTilesChange])
+
+  useEffect(() => {
+    if (onOpponentsChange) {
+      onOpponentsChange(opponents)
+    }
+  }, [opponents, onOpponentsChange])
 
   function loadHand(handTiles: TileType[], drawnTile: TileType | null) {
     setHand(handTiles)
@@ -79,6 +94,7 @@ export function HandInput({ onSubmit, onDiscardTilesChange, isLoading, loadedHan
     setHand([])
     setDrawnTileIndex(null)
     setDiscardList([])
+    setOpponents(DEFAULT_OPPONENTS)
   }
 
   function handleSubmit() {
@@ -152,6 +168,8 @@ export function HandInput({ onSubmit, onDiscardTilesChange, isLoading, loadedHan
           </div>
         </CardContent>
       </Card>
+
+      <OpponentMelds opponents={opponents} onChange={setOpponents} />
 
       {/* Discard List */}
       <Card>

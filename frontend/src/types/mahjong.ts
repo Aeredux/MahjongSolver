@@ -64,6 +64,18 @@ export interface MoveSuggestionResponse {
   current_shanten: number
 }
 
+export type MeldType = 'CHI' | 'PON' | 'KAN_OPEN' | 'KAN_ADDED'
+
+export interface Meld {
+  type: MeldType
+  tiles: TileType[]
+}
+
+export interface Opponent {
+  wind: 'EAST' | 'SOUTH' | 'WEST' | 'NORTH'
+  melds: Meld[]
+}
+
 export interface GameHistoryEntry {
   id: number
   created_at: string

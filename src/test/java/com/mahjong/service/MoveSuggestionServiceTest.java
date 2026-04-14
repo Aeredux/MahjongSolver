@@ -1,14 +1,19 @@
 package com.mahjong.service;
 
+import com.mahjong.dto.MeldDTO;
+import com.mahjong.dto.PlayerDiscardsDTO;
+import com.mahjong.model.MeldType;
 import com.mahjong.model.MoveSuggestion;
 import com.mahjong.model.Tile;
 import com.mahjong.model.TileType;
+import com.mahjong.model.Wind;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -236,5 +241,37 @@ class MoveSuggestionServiceTest {
     void testGetBestMoveForNullHand() {
         MoveSuggestion bestMove = suggestionService.getBestMove(null);
         assertNull(bestMove);
+    }
+
+    @Test
+    void testOpponentMeldTilesCountedAsVisible() {
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P1), new Tile(TileType.P1), new Tile(TileType.P1),
+            new Tile(TileType.S5), new Tile(TileType.S6), new Tile(TileType.S7),
+            new Tile(TileType.EAST), new Tile(TileType.WEST)
+        );
+
+        List<MoveSuggestion> suggestionsNoMelds = suggestionService.suggestMoves(hand);
+        MoveSuggestion eastDiscardNoMelds = suggestionsNoMelds.stream()
+            .filter(s -> s.getDiscardTile() == TileType.EAST)
+            .findFirst().orElse(null);
+        assertNotNull(eastDiscardNoMelds);
+        assertEquals(3, eastDiscardNoMelds.getUkeireCount(),
+            "Without melds, discarding EAST should have 3 ukeire (3 WEST tiles in wall)");
+
+        MeldDTO westPon = new MeldDTO(MeldType.PON,
+            List.of(TileType.WEST, TileType.WEST, TileType.WEST));
+        PlayerDiscardsDTO opponent = new PlayerDiscardsDTO(
+            Wind.SOUTH, Collections.emptyList(), false, List.of(westPon));
+
+        List<MoveSuggestion> suggestionsWithMelds = suggestionService.suggestMoves(hand, List.of(opponent));
+        MoveSuggestion eastDiscardWithMelds = suggestionsWithMelds.stream()
+            .filter(s -> s.getDiscardTile() == TileType.EAST)
+            .findFirst().orElse(null);
+        assertNotNull(eastDiscardWithMelds);
+        assertEquals(0, eastDiscardWithMelds.getUkeireCount(),
+            "Opponent's WEST pon locks all 3 remaining WEST tiles, so ukeire should be 0");
     }
 }

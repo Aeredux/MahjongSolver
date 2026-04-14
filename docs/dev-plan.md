@@ -121,6 +121,7 @@
 - [x] Integration tests for core endpoints
 - [x] Update `POST /api/suggest-move` request DTO: added `List<PlayerDiscardsDTO> opponents` with `tsumogiri` flag per discard
 - [x] Update `POST /api/suggest-move` request DTO: added `List<TileType> discardTiles` for user discard tracking
+- [x] Update `POST /api/suggest-move` request DTO: added `List<MeldDTO> melds` per opponent for open meld tile counting
 
 **Dependencies**: Phase 2 (AI Engine) - Complete
 
@@ -162,6 +163,13 @@
   - [x] Frontend: Added discard list UI with right-click tile picker
   - [x] History: Display discard tiles in history entries
   - [x] Load: Restore discard tiles when loading history entries
+- [x] Opponent called melds: read and track called melds (Chi/Pon/Kan) per opponent
+  - [x] New `MeldDTO` DTO with `MeldType` and tile list
+  - [x] `PlayerDiscardsDTO` extended with `melds` field
+  - [x] `buildVisibleCounts` counts tiles from opponent melds in ukeire calculation
+  - [x] `OpponentMelds` frontend component with inline tile picker (Pon/Chi/Kan)
+  - [x] `HandInput` extended with opponent melds section
+  - [x] Unit test: `testOpponentMeldTilesCountedAsVisible`
 - [x] UI enhancements: Load history & discard list
   - [x] Load button in history entries with improved visibility
   - [x] Right-click context menu handling for discard list

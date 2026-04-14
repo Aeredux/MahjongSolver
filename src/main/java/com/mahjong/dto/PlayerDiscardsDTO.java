@@ -14,4 +14,5 @@ public class PlayerDiscardsDTO {
     private Wind wind;
     private List<DiscardedTileDTO> discards;
     private boolean riichi;
+    private List<MeldDTO> melds;
 }

@@ -4,7 +4,7 @@ import { Sparkles, History } from 'lucide-react'
 import { HandInput } from '@/components/HandInput'
 import { MoveSuggestions } from '@/components/MoveSuggestions'
 import { GameHistory } from '@/components/GameHistory'
-import { type TileType, type MoveSuggestionResponse } from '@/types/mahjong'
+import { type TileType, type MoveSuggestionResponse, type Opponent } from '@/types/mahjong'
 import { cn } from '@/lib/utils'
 
 function App() {
@@ -14,9 +14,14 @@ function App() {
   const [activeTab, setActiveTab] = useState('suggest')
   const [loadedHand, setLoadedHand] = useState<{ hand: TileType[], drawnTile: TileType | null, discardTiles: TileType[] } | null>(null)
   const [discardTiles, setDiscardTiles] = useState<TileType[]>([])
+  const [opponents, setOpponents] = useState<Opponent[]>([])
 
   function handleDiscardTilesChange(discardTiles: TileType[]) {
     setDiscardTiles(discardTiles)
+  }
+
+  function handleOpponentsChange(opponents: Opponent[]) {
+    setOpponents(opponents)
   }
 
   function handleLoadHand(hand: TileType[], drawnTile: TileType | null, discardTiles: TileType[] = []) {
@@ -35,7 +40,14 @@ function App() {
       const res = await fetch('/api/suggest-move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hand, drawn_tile: drawnTile, discard_tiles: discardTiles }),
+        body: JSON.stringify({
+          hand,
+          drawn_tile: drawnTile,
+          discard_tiles: discardTiles,
+          opponents: opponents
+            .filter(o => o.melds.length > 0)
+            .map(o => ({ wind: o.wind, discards: [], riichi: false, melds: o.melds })),
+        }),
       })
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data: MoveSuggestionResponse = await res.json()
@@ -84,7 +96,7 @@ function App() {
           <TabsContent value="suggest">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <HandInput onSubmit={handleSubmit} onDiscardTilesChange={handleDiscardTilesChange} isLoading={isLoading} loadedHand={loadedHand} />
+                <HandInput onSubmit={handleSubmit} onDiscardTilesChange={handleDiscardTilesChange} onOpponentsChange={handleOpponentsChange} isLoading={isLoading} loadedHand={loadedHand} />
               </div>
               <div>
                 {error && (
