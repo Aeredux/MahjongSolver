@@ -27,3 +27,10 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+/target
+
+### Local Runtime Data ###
+data/*.db
+data/*.mv.db
+data/*.trace.db
+data/*.lock.db
