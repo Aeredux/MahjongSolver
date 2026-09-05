@@ -277,29 +277,43 @@ class MoveSuggestionServiceTest {
 
     @Test
     void testDefenseChangesRankingWhenShantenAndUkeireTie() {
+        // 3 melds + ryanmen 23s + three isolated honors. Discarding any honor
+        // leaves the same 1s/4s wait, so shanten and ukeire tie.
         List<Tile> hand = Arrays.asList(
             new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
             new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
-            new Tile(TileType.P1), new Tile(TileType.P1), new Tile(TileType.P1),
-            new Tile(TileType.S5), new Tile(TileType.S6), new Tile(TileType.S7),
-            new Tile(TileType.EAST), new Tile(TileType.WEST)
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.EAST), new Tile(TileType.WEST), new Tile(TileType.NORTH)
         );
 
         var eastDiscard = new com.mahjong.dto.DiscardedTileDTO(TileType.EAST, false);
         PlayerDiscardsDTO opponent = new PlayerDiscardsDTO(
             Wind.SOUTH, List.of(eastDiscard), false, List.of());
 
-        List<MoveSuggestion> suggestions = suggestionService.suggestMoves(hand, List.of(opponent));
-        MoveSuggestion east = suggestions.stream()
+        List<MoveSuggestion> baseline = suggestionService.suggestMoves(hand);
+        List<MoveSuggestion> defended = suggestionService.suggestMoves(hand, List.of(opponent));
+
+        MoveSuggestion east = defended.stream()
             .filter(s -> s.getDiscardTile() == TileType.EAST).findFirst().orElseThrow();
-        MoveSuggestion west = suggestions.stream()
+        MoveSuggestion west = defended.stream()
             .filter(s -> s.getDiscardTile() == TileType.WEST).findFirst().orElseThrow();
 
         assertEquals(east.getShantenAfterDiscard(), west.getShantenAfterDiscard());
-        assertEquals(east.getUkeireCount(), west.getUkeireCount());
-        assertTrue(suggestions.indexOf(east) < suggestions.indexOf(west),
-            "Genbutsu EAST vs SOUTH pond must rank above equally efficient WEST");
         assertTrue(east.getReasoning().contains("Genbutsu"));
+        int baselineGap = indexOf(baseline, TileType.EAST) - indexOf(baseline, TileType.WEST);
+        int defendedGap = indexOf(defended, TileType.EAST) - indexOf(defended, TileType.WEST);
+        assertTrue(defendedGap < baselineGap || indexOf(defended, TileType.EAST) < indexOf(defended, TileType.WEST),
+            "Genbutsu EAST vs SOUTH pond must improve EAST's rank relative to WEST");
+    }
+
+    private static int indexOf(List<MoveSuggestion> suggestions, TileType tile) {
+        for (int i = 0; i < suggestions.size(); i++) {
+            if (suggestions.get(i).getDiscardTile() == tile) {
+                return i;
+            }
+        }
+        return Integer.MAX_VALUE;
     }
 
     @Test

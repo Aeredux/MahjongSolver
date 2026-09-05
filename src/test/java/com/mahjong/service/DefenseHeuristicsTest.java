@@ -1,10 +1,15 @@
 package com.mahjong.service;
 
+import com.mahjong.dto.DiscardedTileDTO;
+import com.mahjong.dto.PlayerDiscardsDTO;
+import com.mahjong.model.Tile;
 import com.mahjong.model.TileType;
+import com.mahjong.model.Wind;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,5 +45,22 @@ class DefenseHeuristicsTest {
         assertTrue(DefenseHeuristics.isOneChance(TileType.S2, visible));
         assertTrue(DefenseHeuristics.isOneChance(TileType.S8, visible));
         assertFalse(DefenseHeuristics.isOneChance(TileType.S1, visible));
+    }
+
+    @Test
+    void genbutsuAgainstEveryPondLowersDanger() {
+        List<Tile> hand = List.of(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.EAST), new Tile(TileType.WEST)
+        );
+        PlayerDiscardsDTO south = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(new DiscardedTileDTO(TileType.EAST, false)), false, List.of());
+        DefenseHeuristics.DefenseContext ctx = DefenseHeuristics.build(hand, List.of(south), List.of());
+
+        int eastDanger = DefenseHeuristics.evaluate(TileType.EAST, ctx).dangerScore();
+        int westDanger = DefenseHeuristics.evaluate(TileType.WEST, ctx).dangerScore();
+        assertTrue(eastDanger < westDanger, "Genbutsu EAST must be safer than WEST vs the same pond");
+        assertTrue(DefenseHeuristics.evaluate(TileType.EAST, ctx).notes().stream()
+            .anyMatch(n -> n.contains("Genbutsu")));
     }
 }
