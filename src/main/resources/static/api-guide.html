@@ -87,7 +87,10 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
   <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Always 13 tiles in your closed hand. The drawn tile (if any) is provided separately via <code>drawn_tile</code>.</td></tr>
   <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
-  <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, genbutsu detection, and tsumogiri tenpai danger. See below.</td></tr>
+  <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, defense ranking (genbutsu / suji / kabe / one-chance), and tsumogiri tenpai danger. See below.</td></tr>
+  <tr><td><code>discard_tiles</code></td><td>array or null</td><td>No</td><td>Caller's own pond (used for visible-tile ukeire). Helper does not send this yet — see KAN-54.</td></tr>
+  <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. Used for yakuhai keep-value and call policy.</td></tr>
+  <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. Used for yakuhai keep-value and call policy.</td></tr>
 </table>
 
 <h4>opponents[] Fields</h4>
@@ -95,7 +98,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
   <tr><td><code>wind</code></td><td>string</td><td>Opponent's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
   <tr><td><code>discards</code></td><td>array of DiscardedTile</td><td>All tiles this opponent has discarded, in order.</td></tr>
-  <tr><td><code>riichi</code></td><td>boolean</td><td>Whether this opponent is in riichi. Enables genbutsu detection.</td></tr>
+  <tr><td><code>riichi</code></td><td>boolean</td><td>Whether this opponent is in riichi. Raises defense threat weight; genbutsu applies to every pond.</td></tr>
 </table>
 
 <h4>DiscardedTile Fields</h4>

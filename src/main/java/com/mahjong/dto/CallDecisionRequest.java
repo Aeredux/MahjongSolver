@@ -1,5 +1,6 @@
 package com.mahjong.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.mahjong.model.CallType;
 import com.mahjong.model.TileType;
 import com.mahjong.model.Wind;
@@ -21,6 +22,10 @@ public class CallDecisionRequest {
     private int playerScore;
     private boolean openKan;
     private List<PlayerDiscardsDTO> opponents;
+
+    @JsonAlias({"seatWind", "seat_wind"})
     private Wind seatWind;
+
+    @JsonAlias({"roundWind", "round_wind"})
     private Wind roundWind;
 }

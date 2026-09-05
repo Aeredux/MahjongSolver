@@ -153,12 +153,14 @@ Tiles are represented using the following notation:
 
 ## AI Strategy
 
-The AI uses **shanten minimization** as its core strategy:
+Discard ranking (KAN-51) is **min shanten → ukeire → good-shape → defense**:
 
-1. **Shanten Calculation**: Determines how many tiles away from tenpai (ready to win)
-2. **Ukeire Counting**: Counts useful tiles that improve the hand
-3. **Move Ranking**: Prioritizes moves that reduce shanten, then maximize ukeire
-4. **Call Evaluation**: Recommends calls based on shanten impact and hand strength
+1. **Shanten / ukeire / good-shape**: [mahjong-utils](https://github.com/ssttkkl/mahjong-utils) (MIT) replaces the homemade calculator
+2. **Defense**: genbutsu vs every pond, plus suji / kabe / one-chance — these change sort order, not just the reasoning string
+3. **Winds**: `seat_wind` / `round_wind` on suggest-move and evaluate-call are consumed for yakuhai
+4. **Calls**: `furoChanceShanten` + Riichi Book 1-style policy (no chi on a shanten tie; riichi is not always-yes; Doman / kuitan-off ≈ almost never chi)
+
+Defense is **half-blind until KAN-54** (no full Helper payload: dora / aka / own pond / real tsumogiri / our melds).
 
 ## Development
 

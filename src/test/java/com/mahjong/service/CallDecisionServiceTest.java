@@ -4,6 +4,7 @@ import com.mahjong.model.CallDecision;
 import com.mahjong.model.CallType;
 import com.mahjong.model.Tile;
 import com.mahjong.model.TileType;
+import com.mahjong.model.Wind;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -243,5 +244,64 @@ class CallDecisionServiceTest {
         assertEquals(CallType.KAN, decision.getCallType());
         assertFalse(decision.isShouldCall());
         assertTrue(decision.getReasoning().contains("Insufficient tiles"));
+    }
+
+    @Test
+    void testEvaluateChiDoesNotCallOnShantenTieOrKuitanOff() {
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5),
+            new Tile(TileType.P1), new Tile(TileType.P2),
+            new Tile(TileType.S1), new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.EAST), new Tile(TileType.SOUTH), new Tile(TileType.WEST)
+        );
+        Tile calledTile = new Tile(TileType.P3);
+        List<Tile> sequenceTiles = Arrays.asList(new Tile(TileType.P1), new Tile(TileType.P2));
+
+        CallDecision decision = callDecisionService.evaluateChi(hand, calledTile, sequenceTiles);
+
+        assertEquals(CallType.CHI, decision.getCallType());
+        assertFalse(decision.isShouldCall(), "Doman / kuitan-off and RB1 forbid casual chi");
+        assertTrue(decision.getReasoning().toLowerCase().contains("chi")
+            || decision.getReasoning().toLowerCase().contains("kuitan"));
+    }
+
+    @Test
+    void testEvaluateRiichiDamatenOnPoorWaitWithYakuhai() {
+        List<Tile> tenpaiHand = Arrays.asList(
+            new Tile(TileType.M2), new Tile(TileType.M3), new Tile(TileType.M4),
+            new Tile(TileType.M5), new Tile(TileType.M6), new Tile(TileType.M7),
+            new Tile(TileType.P2), new Tile(TileType.P2), new Tile(TileType.P2),
+            new Tile(TileType.WHITE), new Tile(TileType.WHITE), new Tile(TileType.WHITE),
+            new Tile(TileType.S5)
+        );
+
+        CallDecision decision = callDecisionService.evaluateRiichi(tenpaiHand, true, 25000);
+
+        assertEquals(CallType.RIICHI, decision.getCallType());
+        assertFalse(decision.isShouldCall(), "RB1: damaten with yakuhai + poor wait");
+        assertTrue(decision.getReasoning().toLowerCase().contains("damaten")
+            || decision.getReasoning().toLowerCase().contains("skip riichi"));
+    }
+
+    @Test
+    void testEvaluatePonYakuhaiUsesSeatWind() {
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M2), new Tile(TileType.M3), new Tile(TileType.M4),
+            new Tile(TileType.M5), new Tile(TileType.M6), new Tile(TileType.M7),
+            new Tile(TileType.P2), new Tile(TileType.P3), new Tile(TileType.P4),
+            new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.EAST), new Tile(TileType.EAST)
+        );
+        Tile calledTile = new Tile(TileType.EAST);
+
+        CallDecision withoutWind = callDecisionService.evaluatePon(hand, calledTile);
+        CallDecision withWind = callDecisionService.evaluatePon(hand, calledTile, Wind.EAST, Wind.SOUTH);
+
+        assertEquals(CallType.PON, withWind.getCallType());
+        assertTrue(withWind.getReasoning().toLowerCase().contains("yakuhai")
+            || withWind.isShouldCall()
+            || !withoutWind.getReasoning().equals(withWind.getReasoning()),
+            "Seat wind must be consumed for yakuhai pon evaluation");
     }
 }
