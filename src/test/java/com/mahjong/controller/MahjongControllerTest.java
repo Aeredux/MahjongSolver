@@ -163,6 +163,27 @@ class MahjongControllerTest {
     }
 
     @Test
+    void testSuggestMoveConsumesSeatAndRoundWind() throws Exception {
+        String body = """
+            {
+              "hand": ["M1","M2","M3","M4","M5","M6","P1","P1","P1","S5","S6","S7","EAST"],
+              "drawn_tile": "WEST",
+              "seat_wind": "EAST",
+              "round_wind": "SOUTH"
+            }
+            """;
+
+        mockMvc.perform(post("/api/suggest-move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.current_shanten").exists())
+            .andExpect(jsonPath("$.suggestions").isArray())
+            .andExpect(jsonPath("$.suggestions[0].discard_tile").exists())
+            .andExpect(jsonPath("$.suggestions[0].ukeire_count").exists());
+    }
+
+    @Test
     void testSuggestMoveWithEmptyHand() throws Exception {
         HandRequest request = new HandRequest();
         request.setHand(Arrays.asList());

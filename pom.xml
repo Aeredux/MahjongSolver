@@ -73,6 +73,13 @@
 
         <!-- Jackson for JSON processing (included with Spring Boot Web) -->
 
+        <!-- Proven riichi shanten / ukeire / furo analysis (MIT) -->
+        <dependency>
+            <groupId>io.github.ssttkkl</groupId>
+            <artifactId>mahjong-utils-jvm</artifactId>
+            <version>0.7.7</version>
+        </dependency>
+
         <!-- Testing dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
