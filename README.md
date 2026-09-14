@@ -154,7 +154,7 @@ Tiles are represented using the following notation:
 
 ## AI Strategy
 
-Discard ranking (KAN-51) is **min shanten → ukeire → good-shape → defense**:
+Discard ranking (KAN-51 / KAN-89) is **min shanten → dora keep → ukeire → good-shape → defense → yakuhai**:
 
 1. **Shanten / ukeire / good-shape**: [mahjong-utils](https://github.com/ssttkkl/mahjong-utils) (MIT) replaces the homemade calculator
 2. **Defense**: genbutsu vs every pond, plus suji / kabe / one-chance — these change sort order, not just the reasoning string

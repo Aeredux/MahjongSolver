@@ -379,28 +379,36 @@ class MoveSuggestionServiceTest {
 
     @Test
     void doraPanelIsDoraAsDisplayedNoTenhouRemap() {
+        // 3 melds + ryanmen 23s + three isolated honors. Discarding any honor
+        // leaves the same 1s/4s wait, so shanten and ukeire tie — keep-value can fire.
         List<Tile> hand = Arrays.asList(
             new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
             new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
-            new Tile(TileType.P1), new Tile(TileType.P1), new Tile(TileType.P1),
-            new Tile(TileType.S5), new Tile(TileType.S6), new Tile(TileType.S7),
-            new Tile(TileType.EAST), new Tile(TileType.WEST)
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.EAST), new Tile(TileType.WEST), new Tile(TileType.NORTH)
         );
 
+        List<MoveSuggestion> baseline = suggestionService.suggestMoves(hand);
         List<MoveSuggestion> withDora = suggestionService.suggestMoves(
             hand, List.of(), List.of(), null, null, List.of(), List.of(TileType.WEST));
-        MoveSuggestion east = withDora.stream()
-            .filter(s -> s.getDiscardTile() == TileType.EAST).findFirst().orElseThrow();
+
         MoveSuggestion west = withDora.stream()
             .filter(s -> s.getDiscardTile() == TileType.WEST).findFirst().orElseThrow();
+        MoveSuggestion east = withDora.stream()
+            .filter(s -> s.getDiscardTile() == TileType.EAST).findFirst().orElseThrow();
         MoveSuggestion north = withDora.stream()
-            .filter(s -> s.getDiscardTile() == TileType.NORTH).findFirst().orElse(null);
+            .filter(s -> s.getDiscardTile() == TileType.NORTH).findFirst().orElseThrow();
 
-        assertEquals(0, east.getShantenAfterDiscard());
-        assertEquals(0, west.getShantenAfterDiscard());
-        assertTrue(withDora.indexOf(east) < withDora.indexOf(west),
-            "Doman panel WEST is the dora itself, so WEST is kept over equally efficient EAST");
+        assertEquals(east.getShantenAfterDiscard(), west.getShantenAfterDiscard());
         assertTrue(west.getReasoning().contains("Dora"));
-        assertNull(north, "Tenhou +1 would treat WEST indicator as NORTH dora; NORTH is not even in hand");
+        assertFalse(north.getReasoning().contains("Dora"),
+            "Tenhou +1 would treat a WEST indicator as NORTH dora; Doman does not remap");
+        assertTrue(withDora.indexOf(east) < withDora.indexOf(west),
+            "Doman panel WEST is the dora itself and should be kept vs equally efficient EAST");
+        int baselineGap = indexOf(baseline, TileType.WEST) - indexOf(baseline, TileType.EAST);
+        int doraGap = indexOf(withDora, TileType.WEST) - indexOf(withDora, TileType.EAST);
+        assertTrue(doraGap > baselineGap || withDora.indexOf(west) > withDora.indexOf(east),
+            "WEST as dora must drop in rank relative to EAST");
     }
 }

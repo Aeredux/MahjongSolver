@@ -89,23 +89,26 @@ public class MoveSuggestionService {
                 goodShape = tenpaiWaitQuality(analysis.getAdvance());
             }
             DefenseHeuristics.TileDefense tileDefense = DefenseHeuristics.evaluate(analysis.getDiscard(), defense);
-            int keepValue = yakuhaiKeepValue(analysis.getDiscard(), seatWind, roundWind)
-                    + doraKeepValue(analysis.getDiscard(), safeDora);
+            int yakuhaiKeep = yakuhaiKeepValue(analysis.getDiscard(), seatWind, roundWind);
+            int doraKeep = doraKeepValue(analysis.getDiscard(), safeDora);
+            int keepValue = yakuhaiKeep + doraKeep;
 
             MoveSuggestion suggestion = new MoveSuggestion(analysis.getDiscard(), analysis.getShanten());
             suggestion.setUkeireCount(ukeire);
             suggestion.setConfidence(calculateConfidence(currentShanten, analysis.getShanten(), ukeire));
             suggestion.setReasoning(generateReasoning(
                     currentShanten, analysis, ukeire, goodShape, tileDefense, keepValue, defense, safeDora));
-            ranked.add(new RankedSuggestion(suggestion, goodShape, tileDefense.dangerScore(), keepValue));
+            ranked.add(new RankedSuggestion(
+                    suggestion, goodShape, tileDefense.dangerScore(), doraKeep, yakuhaiKeep));
         }
 
         ranked.sort(Comparator
                 .comparingInt((RankedSuggestion r) -> r.suggestion.getShantenAfterDiscard())
+                .thenComparingInt(r -> r.doraKeep)
                 .thenComparing(Comparator.comparingInt((RankedSuggestion r) -> r.suggestion.getUkeireCount()).reversed())
                 .thenComparing(Comparator.comparingInt((RankedSuggestion r) -> r.goodShape).reversed())
                 .thenComparingInt(r -> r.dangerScore)
-                .thenComparingInt(r -> r.keepValue));
+                .thenComparingInt(r -> r.yakuhaiKeep));
 
         List<MoveSuggestion> suggestions = ranked.stream()
                 .map(r -> r.suggestion)
@@ -142,8 +145,8 @@ public class MoveSuggestionService {
     }
 
     /**
-     * Doman: the panel tile IS the dora (no Tenhou indicator +1). Higher keep-value
-     * sorts later when shanten / ukeire / shape / defense tie.
+     * Doman: the panel tile IS the dora (no Tenhou indicator +1). Sorts after
+     * shanten and before ukeire so a 1-copy panel does not make discarding dora "more efficient".
      */
     static int doraKeepValue(TileType tile, List<TileType> dora) {
         if (tile == null || dora == null || dora.isEmpty()) {
@@ -264,6 +267,12 @@ public class MoveSuggestionService {
         );
     }
 
-    private record RankedSuggestion(MoveSuggestion suggestion, int goodShape, int dangerScore, int keepValue) {
+    private record RankedSuggestion(
+            MoveSuggestion suggestion,
+            int goodShape,
+            int dangerScore,
+            int doraKeep,
+            int yakuhaiKeep
+    ) {
     }
 }
