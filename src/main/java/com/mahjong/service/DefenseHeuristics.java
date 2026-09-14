@@ -19,8 +19,8 @@ import java.util.Set;
 /**
  * Published riichi defense (genbutsu / suji / kabe / one-chance).
  *
- * <p>Defense is half-blind until KAN-54: Helper does not yet send dora, aka, own pond,
- * real tsumogiri, or our own melds.
+ * <p>Visible counts include Helper dora panel tiles and the caller's own open melds (KAN-89).
+ * Nested {@code player} riichi is not used for our own defense posture.
  */
 final class DefenseHeuristics {
 
@@ -63,6 +63,16 @@ final class DefenseHeuristics {
             List<PlayerDiscardsDTO> opponents,
             List<TileType> ownDiscards
     ) {
+        return build(hand, opponents, ownDiscards, List.of(), List.of());
+    }
+
+    static DefenseContext build(
+            List<Tile> hand,
+            List<PlayerDiscardsDTO> opponents,
+            List<TileType> ownDiscards,
+            List<MeldDTO> ownMelds,
+            List<TileType> dora
+    ) {
         List<PlayerDiscardsDTO> safeOpponents = opponents != null ? opponents : List.of();
         List<TileType> safeOwn = ownDiscards != null ? ownDiscards : List.of();
 
@@ -73,6 +83,14 @@ final class DefenseHeuristics {
         for (TileType own : safeOwn) {
             if (own != null) {
                 visible.merge(own, 1, Integer::sum);
+            }
+        }
+        countMeldTiles(visible, ownMelds);
+        if (dora != null) {
+            for (TileType tile : dora) {
+                if (tile != null) {
+                    visible.merge(tile, 1, Integer::sum);
+                }
             }
         }
 
@@ -100,16 +118,7 @@ final class DefenseHeuristics {
                 }
             }
             if (opponent.getMelds() != null) {
-                for (MeldDTO meld : opponent.getMelds()) {
-                    if (meld.getTiles() == null) {
-                        continue;
-                    }
-                    for (TileType tile : meld.getTiles()) {
-                        if (tile != null) {
-                            visible.merge(tile, 1, Integer::sum);
-                        }
-                    }
-                }
+                countMeldTiles(visible, opponent.getMelds());
             }
             reads.add(new OpponentRead(
                     opponent.getWind(),
@@ -125,6 +134,22 @@ final class DefenseHeuristics {
             remaining.put(type, Math.max(0, 4 - visible.getOrDefault(type, 0)));
         }
         return new DefenseContext(reads, visible, remaining);
+    }
+
+    static void countMeldTiles(Map<TileType, Integer> visible, List<MeldDTO> melds) {
+        if (melds == null) {
+            return;
+        }
+        for (MeldDTO meld : melds) {
+            if (meld == null || meld.getTiles() == null) {
+                continue;
+            }
+            for (TileType tile : meld.getTiles()) {
+                if (tile != null) {
+                    visible.merge(tile, 1, Integer::sum);
+                }
+            }
+        }
     }
 
     static TileDefense evaluate(TileType tile, DefenseContext context) {

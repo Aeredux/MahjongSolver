@@ -194,4 +194,95 @@ class MahjongControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.suggestions").isEmpty());
     }
+
+    @Test
+    void suggestMoveConsumesDoraOwnMeldsAndAka() throws Exception {
+        String body = """
+            {
+              "hand": ["M1","M2","M3","M4","M5","M6","P7","P8","P9","EAST","WEST"],
+              "drawn_tile": null,
+              "dora": ["WEST"],
+              "melds": [{"type": "PON", "tiles": ["P1","P1","P1"]}],
+              "discard_tiles": ["M9"],
+              "seat_wind": "SOUTH",
+              "round_wind": "EAST"
+            }
+            """;
+
+        mockMvc.perform(post("/api/suggest-move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.current_shanten").exists())
+            .andExpect(jsonPath("$.suggestions").isArray())
+            .andExpect(jsonPath("$.suggestions[0].discard_tile").exists());
+    }
+
+    @Test
+    void suggestMoveAcceptsAkaAliasesAndNestedPlayer() throws Exception {
+        String body = """
+            {
+              "hand": ["M1","M2","M3","M4","M0","M6","P1","P1","P1","S5","S6","S7","EAST"],
+              "drawn_tile": "WEST",
+              "dora": ["M0"],
+              "player": {
+                "wind": "EAST",
+                "riichi": false,
+                "discards": [{"tile": "S9", "tsumogiri": true}],
+                "melds": []
+              }
+            }
+            """;
+
+        mockMvc.perform(post("/api/suggest-move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.current_shanten").exists())
+            .andExpect(jsonPath("$.suggestions").isArray());
+    }
+
+    @Test
+    void suggestMoveReadsNestedPlayerMelds() throws Exception {
+        String body = """
+            {
+              "hand": ["M1","M2","M3","M4","M5","M6","P7","P8","P9","EAST","WEST"],
+              "dora": ["EAST"],
+              "player": {
+                "wind": "EAST",
+                "riichi": false,
+                "discards": [],
+                "melds": [{"type": "PON", "tiles": ["P1","P1","P1"]}]
+              }
+            }
+            """;
+
+        mockMvc.perform(post("/api/suggest-move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.suggestions").isArray())
+            .andExpect(jsonPath("$.suggestions[0].shanten_after_discard").value(0));
+    }
+
+    @Test
+    void evaluateCallAcceptsDoraAndOwnMelds() throws Exception {
+        String body = """
+            {
+              "hand": ["M1","M2","M3","M4","M5","M6","P5","P5","S1","S2","S3","EAST","SOUTH"],
+              "called_tile": "P5",
+              "call_type": "PON",
+              "dora": ["P5"],
+              "melds": []
+            }
+            """;
+
+        mockMvc.perform(post("/api/evaluate-call")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.call_type").value("PON"))
+            .andExpect(jsonPath("$.should_call").exists())
+            .andExpect(jsonPath("$.reasoning").exists());
+    }
 }

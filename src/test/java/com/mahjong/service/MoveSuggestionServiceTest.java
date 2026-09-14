@@ -339,4 +339,76 @@ class MoveSuggestionServiceTest {
             "Seat/round EAST is yakuhai and should be kept when WEST is equally efficient");
         assertTrue(east.getReasoning().contains("Yakuhai"));
     }
+
+    @Test
+    void ownMeldTilesCountedAsVisible() {
+        List<Tile> openHand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.EAST), new Tile(TileType.WEST)
+        );
+        MeldDTO p1Pon = new MeldDTO(MeldType.PON, List.of(TileType.P1, TileType.P1, TileType.P1));
+
+        List<MoveSuggestion> open = suggestionService.suggestMoves(
+            openHand, List.of(), List.of(), null, null, List.of(p1Pon), List.of());
+        assertFalse(open.isEmpty(), "Open 11-tile + pon must still produce discards");
+        assertEquals(0, open.stream().mapToInt(MoveSuggestion::getShantenAfterDiscard).min().orElseThrow(),
+            "3 sequences + 2 honors + P1 pon is tenpai after discarding an isolated honor");
+    }
+
+    @Test
+    void ownMeldReducesUkeireLikeOpponentMeld() {
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.EAST), new Tile(TileType.WEST)
+        );
+        MeldDTO westPon = new MeldDTO(MeldType.PON,
+            List.of(TileType.WEST, TileType.WEST, TileType.WEST));
+
+        List<MoveSuggestion> suggestions = suggestionService.suggestMoves(
+            hand, List.of(), List.of(), null, null, List.of(westPon), List.of());
+        MoveSuggestion eastDiscard = suggestions.stream()
+            .filter(s -> s.getDiscardTile() == TileType.EAST).findFirst().orElseThrow();
+        assertEquals(0, eastDiscard.getUkeireCount(),
+            "Own WEST pon locks remaining WEST copies, so discarding EAST has 0 ukeire");
+        assertEquals(0, eastDiscard.getShantenAfterDiscard());
+    }
+
+    @Test
+    void doraPanelIsDoraAsDisplayedNoTenhouRemap() {
+        // 3 melds + ryanmen 23s + three isolated honors. Discarding any honor
+        // leaves the same 1s/4s wait, so shanten and ukeire tie — keep-value can fire.
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.EAST), new Tile(TileType.WEST), new Tile(TileType.NORTH)
+        );
+
+        List<MoveSuggestion> baseline = suggestionService.suggestMoves(hand);
+        List<MoveSuggestion> withDora = suggestionService.suggestMoves(
+            hand, List.of(), List.of(), null, null, List.of(), List.of(TileType.WEST));
+
+        MoveSuggestion west = withDora.stream()
+            .filter(s -> s.getDiscardTile() == TileType.WEST).findFirst().orElseThrow();
+        MoveSuggestion east = withDora.stream()
+            .filter(s -> s.getDiscardTile() == TileType.EAST).findFirst().orElseThrow();
+        MoveSuggestion north = withDora.stream()
+            .filter(s -> s.getDiscardTile() == TileType.NORTH).findFirst().orElseThrow();
+
+        assertEquals(east.getShantenAfterDiscard(), west.getShantenAfterDiscard());
+        assertTrue(west.getReasoning().contains("Dora"));
+        assertFalse(north.getReasoning().contains("Dora"),
+            "Tenhou +1 would treat a WEST indicator as NORTH dora; Doman does not remap");
+        assertTrue(withDora.indexOf(east) < withDora.indexOf(west),
+            "Doman panel WEST is the dora itself and should be kept vs equally efficient EAST");
+        int baselineGap = indexOf(baseline, TileType.WEST) - indexOf(baseline, TileType.EAST);
+        int doraGap = indexOf(withDora, TileType.WEST) - indexOf(withDora, TileType.EAST);
+        assertTrue(doraGap > baselineGap || withDora.indexOf(west) > withDora.indexOf(east),
+            "WEST as dora must drop in rank relative to EAST");
+    }
 }

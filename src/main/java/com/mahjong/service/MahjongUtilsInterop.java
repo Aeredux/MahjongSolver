@@ -1,9 +1,13 @@
 package com.mahjong.service;
 
+import mahjongutils.models.Furo;
 import mahjongutils.shanten.FuroChanceShantenKt;
 import mahjongutils.shanten.FuroChanceShantenResult;
+import mahjongutils.shanten.ShantenKt;
+import mahjongutils.shanten.UnionShantenResult;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,6 +16,8 @@ import java.util.List;
 final class MahjongUtilsInterop {
 
     private static final Method FURO_CHANCE;
+    private static final Method FURO_PARSE;
+    private static final Method FURO_BOX;
 
     static {
         try {
@@ -23,6 +29,12 @@ final class MahjongUtilsInterop {
                     boolean.class,
                     boolean.class
             );
+            FURO_PARSE = Furo.Companion.getClass().getMethod(
+                    "parse-VPTBgb8",
+                    List.class,
+                    boolean.class
+            );
+            FURO_BOX = Furo.class.getDeclaredMethod("box-impl", int.class);
         } catch (NoSuchMethodException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -42,5 +54,38 @@ final class MahjongUtilsInterop {
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("furoChanceShanten interop failed", e);
         }
+    }
+
+    static Furo parseFuro(List<mahjongutils.models.Tile> tiles, boolean ankan) {
+        try {
+            int value = (int) FURO_PARSE.invoke(Furo.Companion, tiles, ankan);
+            return (Furo) FURO_BOX.invoke(null, value);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Furo.parse interop failed", e);
+        }
+    }
+
+    static UnionShantenResult shanten(
+            List<mahjongutils.models.Tile> tiles,
+            List<Furo> furo
+    ) {
+        if (furo == null || furo.isEmpty()) {
+            return ShantenKt.shanten(tiles);
+        }
+        return ShantenKt.shanten(tiles, furo);
+    }
+
+    static List<Furo> toFuroList(List<com.mahjong.dto.MeldDTO> melds) {
+        if (melds == null || melds.isEmpty()) {
+            return List.of();
+        }
+        List<Furo> result = new ArrayList<>();
+        for (com.mahjong.dto.MeldDTO meld : melds) {
+            Furo furo = MahjongUtilsTiles.toFuro(meld);
+            if (furo != null) {
+                result.add(furo);
+            }
+        }
+        return result;
     }
 }
