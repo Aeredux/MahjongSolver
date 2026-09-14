@@ -28,4 +28,13 @@ public class CallDecisionRequest {
 
     @JsonAlias({"roundWind", "round_wind"})
     private Wind roundWind;
+
+    /** Doman panel tiles as displayed — the panel tile IS the dora (no Tenhou +1). */
+    private List<TileType> dora;
+
+    /** Caller's own open melds. */
+    private List<MeldDTO> melds;
+
+    /** Optional same shape as an opponents[] entry (pond + tsumogiri + melds + riichi). */
+    private PlayerDiscardsDTO player;
 }

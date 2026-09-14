@@ -1,5 +1,7 @@
 package com.mahjong.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum TileType {
     M1(TileSuit.MANZU, 1),
     M2(TileSuit.MANZU, 2),
@@ -45,6 +47,31 @@ public enum TileType {
     TileType(TileSuit suit, int value) {
         this.suit = suit;
         this.value = value;
+    }
+
+    /**
+     * Helper sends aka as {@code M0}/{@code P0}/{@code S0}. Canonicalize to the matching 5
+     * so existing 34-tile counts, shanten, and wall remaining stay consistent.
+     */
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static TileType fromJson(String value) {
+        if (value == null) {
+            return null;
+        }
+        return switch (value) {
+            case "M0", "m0" -> M5;
+            case "P0", "p0" -> P5;
+            case "S0", "s0" -> S5;
+            default -> TileType.valueOf(value);
+        };
+    }
+
+    /**
+     * Aka aliases always count as dora, even when the 5 is not the Doman panel tile.
+     */
+    public static boolean isAkaCode(String value) {
+        return "M0".equals(value) || "P0".equals(value) || "S0".equals(value)
+                || "m0".equals(value) || "p0".equals(value) || "s0".equals(value);
     }
 
     public TileSuit getSuit() {

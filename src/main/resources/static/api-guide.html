@@ -88,7 +88,10 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Always 13 tiles in your closed hand. The drawn tile (if any) is provided separately via <code>drawn_tile</code>.</td></tr>
   <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, defense ranking (genbutsu / suji / kabe / one-chance), and tsumogiri tenpai danger. See below.</td></tr>
-  <tr><td><code>discard_tiles</code></td><td>array or null</td><td>No</td><td>Caller's own pond (used for visible-tile ukeire). Helper does not send this yet — see KAN-54.</td></tr>
+  <tr><td><code>discard_tiles</code></td><td>array or null</td><td>No</td><td>Caller's own pond (used for visible-tile ukeire). If omitted, <code>player.discards</code> is used when present.</td></tr>
+  <tr><td><code>dora</code></td><td>array or null</td><td>No</td><td>Doman dora panel tiles as displayed — the panel tile <strong>is</strong> the dora (no Tenhou +1 remap). Counted as visible and kept on ranking ties.</td></tr>
+  <tr><td><code>melds</code></td><td>array or null</td><td>No</td><td>Caller's own open melds <code>{type, tiles[]}</code>. Used for open-hand shanten and visible counts.</td></tr>
+  <tr><td><code>player</code></td><td>object or null</td><td>No</td><td>Optional same shape as an <code>opponents[]</code> entry. <code>player.melds</code> / <code>player.discards</code> are used when top-level <code>melds</code> / <code>discard_tiles</code> are empty. Nested <code>player.riichi</code> is not consumed.</td></tr>
   <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. Used for yakuhai keep-value and call policy.</td></tr>
   <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. Used for yakuhai keep-value and call policy.</td></tr>
 </table>
@@ -214,6 +217,9 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information (same format as suggest-move).</td></tr>
   <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
   <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
+  <tr><td><code>dora</code></td><td>array or null</td><td>No</td><td>Doman dora panel (tile as displayed). Used like yakuhai when deciding pon/chi/kan.</td></tr>
+  <tr><td><code>melds</code></td><td>array or null</td><td>No</td><td>Caller's own open melds, for open-hand shanten / winning checks.</td></tr>
+  <tr><td><code>player</code></td><td>object or null</td><td>No</td><td>Optional same shape as an opponents[] entry; <code>player.melds</code> fills in when top-level <code>melds</code> is empty.</td></tr>
 </table>
 
 <h4>CallType Values</h4>

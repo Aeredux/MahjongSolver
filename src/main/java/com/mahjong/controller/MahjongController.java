@@ -59,10 +59,14 @@ public class MahjongController {
                 hand.add(new Tile(request.getDrawnTile()));
             }
 
-            int currentShanten = shantenCalculator.calculateShanten(hand);
-            List<TileType> ownDiscards = request.getDiscardTiles() != null ? request.getDiscardTiles() : List.of();
+            List<MeldDTO> ownMelds = HelperPayload.ownMelds(request.getMelds(), request.getPlayer());
+            List<TileType> ownDiscards = HelperPayload.ownDiscards(request.getDiscardTiles(), request.getPlayer());
+            List<TileType> dora = HelperPayload.dora(request.getDora());
+            int currentShanten = shantenCalculator.calculateShanten(hand, ownMelds);
             List<MoveSuggestion> suggestions = moveSuggestionService.suggestMoves(
-                    hand, request.getOpponents(), ownDiscards, request.getSeatWind(), request.getRoundWind());
+                    hand, request.getOpponents(), ownDiscards,
+                    request.getSeatWind(), request.getRoundWind(),
+                    ownMelds, dora);
 
             MoveSuggestionResponse response = new MoveSuggestionResponse();
             response.setCurrentShanten(currentShanten);
@@ -102,18 +106,20 @@ public class MahjongController {
 
         try {
             List<Tile> hand = convertToTiles(request.getHand());
+            List<MeldDTO> ownMelds = HelperPayload.ownMelds(request.getMelds(), request.getPlayer());
+            List<TileType> dora = HelperPayload.dora(request.getDora());
             CallDecision decision;
 
             switch (request.getCallType()) {
                 case RON:
                     Tile ronTile = new Tile(request.getCalledTile());
-                    decision = callDecisionService.evaluateRon(hand, ronTile);
+                    decision = callDecisionService.evaluateRon(hand, ronTile, ownMelds);
                     break;
 
                 case TSUMO:
                     Tile tsumoTile = new Tile(request.getCalledTile());
                     hand.add(tsumoTile);
-                    decision = callDecisionService.evaluateTsumo(hand);
+                    decision = callDecisionService.evaluateTsumo(hand, ownMelds);
                     break;
 
                 case RIICHI:
@@ -129,14 +135,15 @@ public class MahjongController {
                 case PON:
                     Tile ponTile = new Tile(request.getCalledTile());
                     decision = callDecisionService.evaluatePon(
-                            hand, ponTile, request.getSeatWind(), request.getRoundWind());
+                            hand, ponTile, request.getSeatWind(), request.getRoundWind(), dora, ownMelds);
                     break;
 
                 case CHI:
                     Tile chiTile = new Tile(request.getCalledTile());
                     List<Tile> sequenceTiles = convertToTiles(request.getSequenceTiles());
                     decision = callDecisionService.evaluateChi(
-                            hand, chiTile, sequenceTiles, request.getSeatWind(), request.getRoundWind());
+                            hand, chiTile, sequenceTiles, request.getSeatWind(), request.getRoundWind(),
+                            dora, ownMelds);
                     break;
 
                 case KAN:
@@ -145,7 +152,8 @@ public class MahjongController {
                         hand.add(kanTile);
                     }
                     decision = callDecisionService.evaluateKan(
-                            hand, kanTile, request.isOpenKan(), request.getSeatWind(), request.getRoundWind());
+                            hand, kanTile, request.isOpenKan(), request.getSeatWind(), request.getRoundWind(),
+                            dora, ownMelds);
                     break;
 
                 default:

@@ -141,6 +141,7 @@ Tiles are represented using the following notation:
 - **Sou (Bamboo)**: S1-S9
 - **Winds**: EAST, SOUTH, WEST, NORTH
 - **Dragons**: WHITE, GREEN, RED
+- **Aka (red 5s)**: M0 / P0 / S0 (Helper) → M5 / P5 / S5
 
 ## Call Types
 
@@ -158,9 +159,10 @@ Discard ranking (KAN-51) is **min shanten → ukeire → good-shape → defense*
 1. **Shanten / ukeire / good-shape**: [mahjong-utils](https://github.com/ssttkkl/mahjong-utils) (MIT) replaces the homemade calculator
 2. **Defense**: genbutsu vs every pond, plus suji / kabe / one-chance — these change sort order, not just the reasoning string
 3. **Winds**: `seat_wind` / `round_wind` on suggest-move and evaluate-call are consumed for yakuhai
-4. **Calls**: `furoChanceShanten` + Riichi Book 1-style policy (no chi on a shanten tie; riichi is not always-yes; Doman / kuitan-off ≈ almost never chi)
+4. **Dora / own melds (KAN-89)**: Helper `dora` (Doman panel tile **is** the dora, no Tenhou +1) and own `melds` feed visible counts, open-hand shanten, and keep-value ranking. Aka `M0`/`P0`/`S0` canonicalizes to `M5`/`P5`/`S5`. Nested `player.melds` / `player.discards` fill in when top-level `melds` / `discard_tiles` are empty.
+5. **Calls**: `furoChanceShanten` + Riichi Book 1-style policy (no chi on a shanten tie; riichi is not always-yes; Doman / kuitan-off ≈ almost never chi). evaluate-call also reads `dora` + own `melds` when present.
 
-Defense is **half-blind until KAN-54** (no full Helper payload: dora / aka / own pond / real tsumogiri / our melds).
+Remaining gaps: nested `player.riichi` is not a self-defense signal; seat/round winds are yakuhai-only (no full hora/EV); aka-dora keep-value after canonicalizing `M0`→`M5` cannot distinguish a red 5 from a regular 5 unless that 5 is also the panel dora; ura-dora and han/fu scoring are still out of scope.
 
 ## Development
 
