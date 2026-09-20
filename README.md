@@ -154,15 +154,16 @@ Tiles are represented using the following notation:
 
 ## AI Strategy
 
-Discard ranking (KAN-51 / KAN-89) is **min shanten → dora keep → ukeire → good-shape → defense → yakuhai**:
+Discard ranking (KAN-51 / KAN-89) is **min shanten → dora keep → ukeire → good-shape → defense → yakuhai**. When honba / sticks / late-round place risk warrant a fold (KAN-92), **defense moves ahead of ukeire**.
 
 1. **Shanten / ukeire / good-shape**: [mahjong-utils](https://github.com/ssttkkl/mahjong-utils) (MIT) replaces the homemade calculator
 2. **Defense**: genbutsu vs every pond, plus suji / kabe / one-chance — these change sort order, not just the reasoning string
 3. **Winds**: `seat_wind` / `round_wind` on suggest-move and evaluate-call are consumed for yakuhai
 4. **Dora / own melds (KAN-89)**: Helper `dora` (Doman panel tile **is** the dora, no Tenhou +1) and own `melds` feed visible counts, open-hand shanten, and keep-value ranking. Aka `M0`/`P0`/`S0` canonicalizes to `M5`/`P5`/`S5`. Nested `player.melds` / `player.discards` fill in when top-level `melds` / `discard_tiles` are empty.
-5. **Calls**: `furoChanceShanten` + Riichi Book 1-style policy (no chi on a shanten tie; riichi is not always-yes; Doman / kuitan-off ≈ almost never chi). evaluate-call also reads `dora` + own `melds` when present.
+5. **Honba / table scores (KAN-92)**: additive `honba`, `riichi_sticks`, `round_number`, `player_score`, and seat-relative `right_score` / `opposite_score` / `left_score` (or `opponent_scores` / `opponents[].score`, right → opposite → left). High honba, late first-place with a thin lead, or nested `player.riichi` (already riichi) folds: safer discards rank first; riichi damaten if the hand already has yaku; non-improving opens are skipped.
+6. **Calls**: `furoChanceShanten` + Riichi Book 1-style policy (no chi on a shanten tie; riichi is not always-yes; Doman / kuitan-off ≈ almost never chi). evaluate-call also reads `dora` + own `melds` when present.
 
-Remaining gaps: nested `player.riichi` is not a self-defense signal; seat/round winds are yakuhai-only (no full hora/EV); aka-dora keep-value after canonicalizing `M0`→`M5` cannot distinguish a red 5 from a regular 5 unless that 5 is also the panel dora; ura-dora and han/fu scoring are still out of scope.
+Remaining gaps: seat/round winds are yakuhai-only (no full hora/EV); aka-dora keep-value after canonicalizing `M0`→`M5` cannot distinguish a red 5 from a regular 5 unless that 5 is also the panel dora; ura-dora and han/fu scoring are still out of scope; fold pressure is a heuristic (not pot/placement EV). Helper must POST the new fields (KAN-91).
 
 ## Development
 

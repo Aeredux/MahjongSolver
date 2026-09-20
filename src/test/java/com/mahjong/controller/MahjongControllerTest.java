@@ -285,4 +285,63 @@ class MahjongControllerTest {
             .andExpect(jsonPath("$.should_call").exists())
             .andExpect(jsonPath("$.reasoning").exists());
     }
+
+    @Test
+    void suggestMoveAcceptsHonbaAndTableScores() throws Exception {
+        String body = """
+            {
+              "hand": ["M1","M2","M3","M4","M5","M6","P7","P8","P9","S5","S5","P5","P6"],
+              "drawn_tile": "P7",
+              "honba": 3,
+              "riichi_sticks": 2,
+              "round_number": 8,
+              "player_score": 35000,
+              "right_score": 28000,
+              "opposite_score": 27000,
+              "left_score": 26000,
+              "opponents": [
+                {
+                  "wind": "SOUTH",
+                  "riichi": true,
+                  "score": 28000,
+                  "discards": [{"tile": "S5", "tsumogiri": false}]
+                }
+              ]
+            }
+            """;
+
+        mockMvc.perform(post("/api/suggest-move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.suggestions").isArray())
+            .andExpect(jsonPath("$.suggestions[0].discard_tile").exists())
+            .andExpect(jsonPath("$.suggestions[0].reasoning").exists());
+    }
+
+    @Test
+    void evaluateRiichiAcceptsHonbaAndFoldsWithYaku() throws Exception {
+        String body = """
+            {
+              "hand": ["M2","M3","M4","M5","M6","M7","P2","P3","P4","P8","P8","S5","S6"],
+              "call_type": "RIICHI",
+              "menzen": true,
+              "player_score": 35000,
+              "honba": 3,
+              "riichi_sticks": 2,
+              "round_number": 8,
+              "right_score": 32000,
+              "opposite_score": 28000,
+              "left_score": 25000
+            }
+            """;
+
+        mockMvc.perform(post("/api/evaluate-call")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.call_type").value("RIICHI"))
+            .andExpect(jsonPath("$.should_call").value(false))
+            .andExpect(jsonPath("$.reasoning").exists());
+    }
 }

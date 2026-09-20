@@ -304,4 +304,70 @@ class CallDecisionServiceTest {
             || !withoutWind.getReasoning().equals(withWind.getReasoning()),
             "Seat wind must be consumed for yakuhai pon evaluation");
     }
+
+    @Test
+    void honbaAndScoresSkipRiichiWhenHandAlreadyHasYaku() {
+        List<Tile> tenpaiHand = Arrays.asList(
+            new Tile(TileType.M2), new Tile(TileType.M3), new Tile(TileType.M4),
+            new Tile(TileType.M5), new Tile(TileType.M6), new Tile(TileType.M7),
+            new Tile(TileType.P2), new Tile(TileType.P3), new Tile(TileType.P4),
+            new Tile(TileType.P8), new Tile(TileType.P8),
+            new Tile(TileType.S5), new Tile(TileType.S6)
+        );
+
+        CallDecision push = callDecisionService.evaluateRiichi(tenpaiHand, true, 35000);
+        TableSituation fold = TableSituation.from(
+            3, 2, 8, 35000, 32000, 28000, 25000, null, List.of(), null);
+        CallDecision cautious = callDecisionService.evaluateRiichi(
+            tenpaiHand, true, 35000, null, null, fold);
+
+        assertTrue(push.isShouldCall(), "Good-wait tanyao should riichi without table pressure");
+        assertFalse(cautious.isShouldCall(), "Honba/scores must damaten when yaku already exists");
+        assertTrue(cautious.getReasoning().toLowerCase().contains("fold")
+            || cautious.getReasoning().toLowerCase().contains("damaten"));
+    }
+
+    @Test
+    void honbaSkipsYakuhaiPonOnShantenTie() {
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M2), new Tile(TileType.M3), new Tile(TileType.M4),
+            new Tile(TileType.M5), new Tile(TileType.M6), new Tile(TileType.M7),
+            new Tile(TileType.P2), new Tile(TileType.P3), new Tile(TileType.P4),
+            new Tile(TileType.S2), new Tile(TileType.S3),
+            new Tile(TileType.EAST), new Tile(TileType.EAST)
+        );
+        Tile calledTile = new Tile(TileType.EAST);
+
+        CallDecision push = callDecisionService.evaluatePon(
+            hand, calledTile, Wind.EAST, Wind.SOUTH);
+        TableSituation fold = TableSituation.from(
+            3, 0, 1, null, null, null, null, null, List.of(), null);
+        CallDecision cautious = callDecisionService.evaluatePon(
+            hand, calledTile, Wind.EAST, Wind.SOUTH, List.of(), List.of(), fold);
+
+        assertTrue(push.isShouldCall(), "Yakuhai pon on a shanten tie is a call when pushing");
+        assertFalse(cautious.isShouldCall(), "Honba fold must skip a non-improving open pon");
+        assertTrue(cautious.getReasoning().toLowerCase().contains("fold"));
+    }
+
+    @Test
+    void alreadyRiichiSkipsRedeclaration() {
+        List<Tile> tenpaiHand = Arrays.asList(
+            new Tile(TileType.M2), new Tile(TileType.M3), new Tile(TileType.M4),
+            new Tile(TileType.M5), new Tile(TileType.M6), new Tile(TileType.M7),
+            new Tile(TileType.P2), new Tile(TileType.P3), new Tile(TileType.P4),
+            new Tile(TileType.P8), new Tile(TileType.P8),
+            new Tile(TileType.S5), new Tile(TileType.S6)
+        );
+        com.mahjong.dto.PlayerDiscardsDTO self = new com.mahjong.dto.PlayerDiscardsDTO();
+        self.setRiichi(true);
+        TableSituation already = TableSituation.from(
+            null, null, null, null, null, null, null, null, List.of(), self);
+
+        CallDecision decision = callDecisionService.evaluateRiichi(
+            tenpaiHand, true, 25000, null, null, already);
+
+        assertFalse(decision.isShouldCall());
+        assertTrue(decision.getReasoning().toLowerCase().contains("already"));
+    }
 }

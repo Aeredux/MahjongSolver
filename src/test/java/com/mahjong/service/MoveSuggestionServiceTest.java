@@ -411,4 +411,70 @@ class MoveSuggestionServiceTest {
         assertTrue(doraGap > baselineGap || withDora.indexOf(west) > withDora.indexOf(east),
             "WEST as dora must drop in rank relative to EAST");
     }
+
+    @Test
+    void honbaAndScoresFoldDangerousUkeireForGenbutsu() {
+        // 123m 456m 789p 55s 567p — discard P5/P7 is ryanmen tenpai; S5 is tanki genbutsu.
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.S5), new Tile(TileType.S5),
+            new Tile(TileType.P5), new Tile(TileType.P6), new Tile(TileType.P7)
+        );
+        var s5Discard = new com.mahjong.dto.DiscardedTileDTO(TileType.S5, false);
+        PlayerDiscardsDTO riichiRight = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(s5Discard), true, List.of());
+        List<PlayerDiscardsDTO> opponents = List.of(riichiRight);
+
+        List<MoveSuggestion> push = suggestionService.suggestMoves(hand, opponents);
+        TableSituation foldTable = TableSituation.from(
+            3, 2, 8, 35000, 28000, 27000, 26000, null, opponents, null);
+        List<MoveSuggestion> fold = suggestionService.suggestMoves(
+            hand, opponents, List.of(), null, null, List.of(), List.of(), foldTable);
+
+        MoveSuggestion pushP5 = push.stream()
+            .filter(s -> s.getDiscardTile() == TileType.P5).findFirst().orElseThrow();
+        MoveSuggestion pushS5 = push.stream()
+            .filter(s -> s.getDiscardTile() == TileType.S5).findFirst().orElseThrow();
+        assertEquals(pushP5.getShantenAfterDiscard(), pushS5.getShantenAfterDiscard());
+        assertTrue(pushP5.getUkeireCount() > pushS5.getUkeireCount(),
+            "P5 must be the offensive (higher ukeire) discard vs tanki S5");
+        assertTrue(indexOf(push, TileType.P5) < indexOf(push, TileType.S5),
+            "Without table meta, ukeire ranks the dangerous P5 ahead of genbutsu S5");
+
+        assertTrue(foldTable.preferDefense());
+        assertTrue(indexOf(fold, TileType.S5) < indexOf(fold, TileType.P5),
+            "Honba/scores must fold: genbutsu S5 ahead of dangerous P5");
+        MoveSuggestion foldS5 = fold.stream()
+            .filter(s -> s.getDiscardTile() == TileType.S5).findFirst().orElseThrow();
+        assertTrue(foldS5.getReasoning().contains("Fold") || foldS5.getReasoning().contains("Genbutsu"));
+    }
+
+    @Test
+    void nestedPlayerRiichiUsesSelfDefensePosture() {
+        List<Tile> hand = Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.S5), new Tile(TileType.S5),
+            new Tile(TileType.P5), new Tile(TileType.P6), new Tile(TileType.P7)
+        );
+        var s5Discard = new com.mahjong.dto.DiscardedTileDTO(TileType.S5, false);
+        PlayerDiscardsDTO riichiRight = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(s5Discard), true, List.of());
+        PlayerDiscardsDTO self = new PlayerDiscardsDTO();
+        self.setRiichi(true);
+        TableSituation already = TableSituation.from(
+            null, null, null, null, null, null, null, null, List.of(riichiRight), self);
+
+        List<MoveSuggestion> suggestions = suggestionService.suggestMoves(
+            hand, List.of(riichiRight), List.of(), null, null, List.of(), List.of(), already);
+
+        assertTrue(already.alreadyRiichi());
+        assertTrue(indexOf(suggestions, TileType.S5) < indexOf(suggestions, TileType.P5),
+            "Already-riichi must prefer genbutsu over the higher-ukeire deal-in");
+        assertTrue(suggestions.get(0).getReasoning().contains("Already riichi")
+            || suggestions.stream().anyMatch(s -> s.getReasoning().contains("Already riichi")));
+    }
 }

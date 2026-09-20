@@ -91,9 +91,15 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>discard_tiles</code></td><td>array or null</td><td>No</td><td>Caller's own pond (used for visible-tile ukeire). If omitted, <code>player.discards</code> is used when present.</td></tr>
   <tr><td><code>dora</code></td><td>array or null</td><td>No</td><td>Doman dora panel tiles as displayed — the panel tile <strong>is</strong> the dora (no Tenhou +1 remap). Counted as visible and kept on ranking ties.</td></tr>
   <tr><td><code>melds</code></td><td>array or null</td><td>No</td><td>Caller's own open melds <code>{type, tiles[]}</code>. Used for open-hand shanten and visible counts.</td></tr>
-  <tr><td><code>player</code></td><td>object or null</td><td>No</td><td>Optional same shape as an <code>opponents[]</code> entry. <code>player.melds</code> / <code>player.discards</code> are used when top-level <code>melds</code> / <code>discard_tiles</code> are empty. Nested <code>player.riichi</code> is not consumed.</td></tr>
+  <tr><td><code>player</code></td><td>object or null</td><td>No</td><td>Optional same shape as an <code>opponents[]</code> entry. <code>player.melds</code> / <code>player.discards</code> are used when top-level <code>melds</code> / <code>discard_tiles</code> are empty. Nested <code>player.riichi</code> is treated as already-riichi self-defense (fold / tsumogiri posture).</td></tr>
   <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. Used for yakuhai keep-value and call policy.</td></tr>
   <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. Used for yakuhai keep-value and call policy.</td></tr>
+  <tr><td><code>honba</code></td><td>int</td><td>No</td><td>Repeat counter. Raises fold pressure (safer discards rank ahead of ukeire).</td></tr>
+  <tr><td><code>riichi_sticks</code></td><td>int</td><td>No</td><td>Riichi sticks in the pot. Same fold-pressure effect as honba.</td></tr>
+  <tr><td><code>round_number</code></td><td>int</td><td>No</td><td>1-indexed round (East 1 = 1, South 4 = 8). Late rounds add place-protection fold.</td></tr>
+  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Own score. Used with opponent scores for first/last-place fold vs push.</td></tr>
+  <tr><td><code>right_score</code> / <code>opposite_score</code> / <code>left_score</code></td><td>int</td><td>No</td><td>Seat-relative opponent scores aligned with <code>opponents[]</code> (right, opposite, left).</td></tr>
+  <tr><td><code>opponent_scores</code></td><td>array of int</td><td>No</td><td>Optional alternative to the flat score fields, same seat order.</td></tr>
 </table>
 
 <h4>opponents[] Fields</h4>
@@ -102,6 +108,7 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>wind</code></td><td>string</td><td>Opponent's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
   <tr><td><code>discards</code></td><td>array of DiscardedTile</td><td>All tiles this opponent has discarded, in order.</td></tr>
   <tr><td><code>riichi</code></td><td>boolean</td><td>Whether this opponent is in riichi. Raises defense threat weight; genbutsu applies to every pond.</td></tr>
+  <tr><td><code>score</code></td><td>int</td><td>Optional opponent score. Used when flat <code>right_score</code> / <code>opposite_score</code> / <code>left_score</code> are omitted.</td></tr>
 </table>
 
 <h4>DiscardedTile Fields</h4>
@@ -212,7 +219,9 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>call_type</code></td><td>string</td><td>Yes</td><td>One of: <code>CHI</code>, <code>PON</code>, <code>KAN</code>, <code>RON</code>, <code>RIICHI</code>, <code>TSUMO</code></td></tr>
   <tr><td><code>sequence_tiles</code></td><td>array of 2 TileType strings</td><td>CHI only</td><td>The two tiles in hand that form a sequence with <code>called_tile</code>. E.g. calling chi on M3 with M1M2 in hand: <code>["M1","M2"]</code>.</td></tr>
   <tr><td><code>menzen</code></td><td>boolean</td><td>No</td><td>Whether the hand is currently closed. Default: true.</td></tr>
-  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000). Default: 25000.</td></tr>
+  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000) and table place (KAN-92). Default: 0 if omitted.</td></tr>
+  <tr><td><code>honba</code> / <code>riichi_sticks</code> / <code>round_number</code></td><td>int</td><td>No</td><td>Same meaning as suggest-move. High honba/late thin lead → damaten when the hand already has yaku; skip non-improving opens.</td></tr>
+  <tr><td><code>right_score</code> / <code>opposite_score</code> / <code>left_score</code></td><td>int</td><td>No</td><td>Seat-relative opponent scores aligned with <code>opponents[]</code>.</td></tr>
   <tr><td><code>open_kan</code></td><td>boolean</td><td>No</td><td>Whether the kan would be open. Default: false.</td></tr>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information (same format as suggest-move).</td></tr>
   <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>

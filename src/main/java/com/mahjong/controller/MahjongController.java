@@ -66,7 +66,7 @@ public class MahjongController {
             List<MoveSuggestion> suggestions = moveSuggestionService.suggestMoves(
                     hand, request.getOpponents(), ownDiscards,
                     request.getSeatWind(), request.getRoundWind(),
-                    ownMelds, dora);
+                    ownMelds, dora, TableSituation.from(request));
 
             MoveSuggestionResponse response = new MoveSuggestionResponse();
             response.setCurrentShanten(currentShanten);
@@ -108,6 +108,7 @@ public class MahjongController {
             List<Tile> hand = convertToTiles(request.getHand());
             List<MeldDTO> ownMelds = HelperPayload.ownMelds(request.getMelds(), request.getPlayer());
             List<TileType> dora = HelperPayload.dora(request.getDora());
+            TableSituation table = TableSituation.from(request);
             CallDecision decision;
 
             switch (request.getCallType()) {
@@ -128,14 +129,16 @@ public class MahjongController {
                         request.isMenzen(),
                         request.getPlayerScore(),
                         request.getSeatWind(),
-                        request.getRoundWind()
+                        request.getRoundWind(),
+                        table
                     );
                     break;
 
                 case PON:
                     Tile ponTile = new Tile(request.getCalledTile());
                     decision = callDecisionService.evaluatePon(
-                            hand, ponTile, request.getSeatWind(), request.getRoundWind(), dora, ownMelds);
+                            hand, ponTile, request.getSeatWind(), request.getRoundWind(), dora, ownMelds,
+                            table);
                     break;
 
                 case CHI:
@@ -143,7 +146,7 @@ public class MahjongController {
                     List<Tile> sequenceTiles = convertToTiles(request.getSequenceTiles());
                     decision = callDecisionService.evaluateChi(
                             hand, chiTile, sequenceTiles, request.getSeatWind(), request.getRoundWind(),
-                            dora, ownMelds);
+                            dora, ownMelds, table);
                     break;
 
                 case KAN:
@@ -153,7 +156,7 @@ public class MahjongController {
                     }
                     decision = callDecisionService.evaluateKan(
                             hand, kanTile, request.isOpenKan(), request.getSeatWind(), request.getRoundWind(),
-                            dora, ownMelds);
+                            dora, ownMelds, table);
                     break;
 
                 default:

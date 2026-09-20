@@ -80,7 +80,24 @@ public class CallDecisionService {
     }
 
     public CallDecision evaluateRiichi(List<Tile> hand, boolean isMenzen, int score, Wind seatWind, Wind roundWind) {
+        return evaluateRiichi(hand, isMenzen, score, seatWind, roundWind, TableSituation.NONE);
+    }
+
+    public CallDecision evaluateRiichi(
+            List<Tile> hand,
+            boolean isMenzen,
+            int score,
+            Wind seatWind,
+            Wind roundWind,
+            TableSituation table
+    ) {
         logger.debug("Evaluating RIICHI decision");
+
+        TableSituation tableMeta = table != null ? table : TableSituation.NONE;
+        if (tableMeta.alreadyRiichi()) {
+            return new CallDecision(CallType.RIICHI, false, 0.0,
+                    "Already in riichi — skip re-declaration", 0, 0);
+        }
 
         if (!isMenzen) {
             return new CallDecision(CallType.RIICHI, false, 0.0,
@@ -136,6 +153,14 @@ public class CallDecisionService {
                     waitCount);
         }
 
+        if (shouldCall && hasYaku && tableMeta.cautiousRiichi()) {
+            shouldCall = false;
+            confidence = 0.4;
+            reasoning = String.format(
+                    "Damaten: honba/scores warrant folding with existing yaku (%d wait type(s)). Skip riichi.",
+                    waitCount);
+        }
+
         return new CallDecision(CallType.RIICHI, shouldCall, confidence, reasoning, 0, 0);
     }
 
@@ -155,7 +180,20 @@ public class CallDecisionService {
             List<TileType> dora,
             List<MeldDTO> ownMelds
     ) {
+        return evaluatePon(hand, calledTile, seatWind, roundWind, dora, ownMelds, TableSituation.NONE);
+    }
+
+    public CallDecision evaluatePon(
+            List<Tile> hand,
+            Tile calledTile,
+            Wind seatWind,
+            Wind roundWind,
+            List<TileType> dora,
+            List<MeldDTO> ownMelds,
+            TableSituation table
+    ) {
         logger.debug("Evaluating PON decision for tile {}", calledTile.getType());
+        TableSituation tableMeta = table != null ? table : TableSituation.NONE;
 
         Map<TileType, Integer> counts = DefenseHeuristics.handCounts(hand);
         int tileCount = counts.getOrDefault(calledTile.getType(), 0);
@@ -206,6 +244,14 @@ public class CallDecisionService {
                     currentShanten, shantenAfterPon);
         }
 
+        if (shouldCall && tableMeta.skipNonImprovingCalls() && shantenAfterPon >= currentShanten) {
+            shouldCall = false;
+            confidence = Math.min(confidence, 0.3);
+            reasoning = String.format(
+                    "Fold: honba/scores — skip opening PON that does not improve shanten (now %d).",
+                    currentShanten);
+        }
+
         return new CallDecision(CallType.PON, shouldCall, confidence, reasoning,
                 currentShanten, shantenAfterPon);
     }
@@ -233,7 +279,22 @@ public class CallDecisionService {
             List<TileType> dora,
             List<MeldDTO> ownMelds
     ) {
+        return evaluateChi(hand, calledTile, sequenceTiles, seatWind, roundWind, dora, ownMelds,
+                TableSituation.NONE);
+    }
+
+    public CallDecision evaluateChi(
+            List<Tile> hand,
+            Tile calledTile,
+            List<Tile> sequenceTiles,
+            Wind seatWind,
+            Wind roundWind,
+            List<TileType> dora,
+            List<MeldDTO> ownMelds,
+            TableSituation table
+    ) {
         logger.debug("Evaluating CHI decision for tile {}", calledTile.getType());
+        TableSituation tableMeta = table != null ? table : TableSituation.NONE;
 
         if (calledTile.getSuit() == TileSuit.HONOR) {
             return new CallDecision(CallType.CHI, false, 0.0,
@@ -285,6 +346,14 @@ public class CallDecisionService {
                     currentShanten, shantenAfterChi);
         }
 
+        if (shouldCall && tableMeta.skipNonImprovingCalls() && shantenAfterChi >= currentShanten) {
+            shouldCall = false;
+            confidence = 0.2;
+            reasoning = String.format(
+                    "Fold: honba/scores — skip CHI that does not improve shanten (now %d).",
+                    currentShanten);
+        }
+
         return new CallDecision(CallType.CHI, shouldCall, confidence, reasoning,
                 currentShanten, shantenAfterChi);
     }
@@ -306,7 +375,22 @@ public class CallDecisionService {
             List<TileType> dora,
             List<MeldDTO> ownMelds
     ) {
+        return evaluateKan(hand, calledTile, isOpen, seatWind, roundWind, dora, ownMelds,
+                TableSituation.NONE);
+    }
+
+    public CallDecision evaluateKan(
+            List<Tile> hand,
+            Tile calledTile,
+            boolean isOpen,
+            Wind seatWind,
+            Wind roundWind,
+            List<TileType> dora,
+            List<MeldDTO> ownMelds,
+            TableSituation table
+    ) {
         logger.debug("Evaluating KAN decision for tile {}", calledTile.getType());
+        TableSituation tableMeta = table != null ? table : TableSituation.NONE;
 
         Map<TileType, Integer> counts = DefenseHeuristics.handCounts(hand);
         int tileCount = counts.getOrDefault(calledTile.getType(), 0);
@@ -352,6 +436,14 @@ public class CallDecisionService {
             reasoning = String.format(
                     "KAN does not improve shanten (now %d, after %d) — skip.",
                     currentShanten, shantenAfterKan);
+        }
+
+        if (shouldCall && tableMeta.skipNonImprovingCalls() && shantenAfterKan >= currentShanten) {
+            shouldCall = false;
+            confidence = 0.25;
+            reasoning = String.format(
+                    "Fold: honba/scores — skip KAN that does not improve shanten (now %d).",
+                    currentShanten);
         }
 
         return new CallDecision(CallType.KAN, shouldCall, confidence, reasoning,

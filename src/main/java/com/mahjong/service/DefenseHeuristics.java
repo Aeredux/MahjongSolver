@@ -20,7 +20,7 @@ import java.util.Set;
  * Published riichi defense (genbutsu / suji / kabe / one-chance).
  *
  * <p>Visible counts include Helper dora panel tiles and the caller's own open melds (KAN-89).
- * Nested {@code player} riichi is not used for our own defense posture.
+ * Nested {@code player.riichi} is consumed as already-riichi self-defense via {@link TableSituation}.
  */
 final class DefenseHeuristics {
 

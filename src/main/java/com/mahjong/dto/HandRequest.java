@@ -32,4 +32,18 @@ public class HandRequest {
 
     /** Optional same shape as an opponents[] entry (pond + tsumogiri + melds + riichi). */
     private PlayerDiscardsDTO player;
+
+    /** Repeat counters and sticks (KAN-92). Absent means "not sent". */
+    private Integer honba;
+    private Integer riichiSticks;
+    private Integer roundNumber;
+
+    /** Own score; also accepted on suggest-move (evaluate-call already had player_score). */
+    private Integer playerScore;
+
+    /** Seat-relative opponent scores aligned with opponents[]: right / opposite / left. */
+    private Integer rightScore;
+    private Integer oppositeScore;
+    private Integer leftScore;
+    private List<Integer> opponentScores;
 }

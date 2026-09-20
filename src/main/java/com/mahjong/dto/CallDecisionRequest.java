@@ -37,4 +37,15 @@ public class CallDecisionRequest {
 
     /** Optional same shape as an opponents[] entry (pond + tsumogiri + melds + riichi). */
     private PlayerDiscardsDTO player;
+
+    /** Repeat counters and sticks (KAN-92). Absent means "not sent". */
+    private Integer honba;
+    private Integer riichiSticks;
+    private Integer roundNumber;
+
+    /** Seat-relative opponent scores aligned with opponents[]: right / opposite / left. */
+    private Integer rightScore;
+    private Integer oppositeScore;
+    private Integer leftScore;
+    private List<Integer> opponentScores;
 }
