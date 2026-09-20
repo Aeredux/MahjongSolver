@@ -124,10 +124,11 @@ public class MahjongController {
                     break;
 
                 case RIICHI:
+                    int playerScore = request.getPlayerScore() != null ? request.getPlayerScore() : 0;
                     decision = callDecisionService.evaluateRiichi(
                         hand,
                         request.isMenzen(),
-                        request.getPlayerScore(),
+                        playerScore,
                         request.getSeatWind(),
                         request.getRoundWind(),
                         table

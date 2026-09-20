@@ -317,7 +317,7 @@ class CallDecisionServiceTest {
 
         CallDecision push = callDecisionService.evaluateRiichi(tenpaiHand, true, 35000);
         TableSituation fold = TableSituation.from(
-            3, 2, 8, 35000, 32000, 28000, 25000, null, List.of(), null);
+            3, 2, 4, 35000, 32000, 28000, 25000, List.of(), null, Wind.SOUTH);
         CallDecision cautious = callDecisionService.evaluateRiichi(
             tenpaiHand, true, 35000, null, null, fold);
 
@@ -341,7 +341,7 @@ class CallDecisionServiceTest {
         CallDecision push = callDecisionService.evaluatePon(
             hand, calledTile, Wind.EAST, Wind.SOUTH);
         TableSituation fold = TableSituation.from(
-            3, 0, 1, null, null, null, null, null, List.of(), null);
+            3, 0, 1, null, null, null, null, List.of(), null, Wind.EAST);
         CallDecision cautious = callDecisionService.evaluatePon(
             hand, calledTile, Wind.EAST, Wind.SOUTH, List.of(), List.of(), fold);
 
@@ -362,7 +362,7 @@ class CallDecisionServiceTest {
         com.mahjong.dto.PlayerDiscardsDTO self = new com.mahjong.dto.PlayerDiscardsDTO();
         self.setRiichi(true);
         TableSituation already = TableSituation.from(
-            null, null, null, null, null, null, null, null, List.of(), self);
+            null, null, null, null, null, null, null, List.of(), self, null);
 
         CallDecision decision = callDecisionService.evaluateRiichi(
             tenpaiHand, true, 25000, null, null, already);

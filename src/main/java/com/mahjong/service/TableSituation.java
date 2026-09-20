@@ -3,25 +3,30 @@ package com.mahjong.service;
 import com.mahjong.dto.CallDecisionRequest;
 import com.mahjong.dto.HandRequest;
 import com.mahjong.dto.PlayerDiscardsDTO;
+import com.mahjong.model.Wind;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Honba / riichi sticks / round / table scores for push-vs-fold.
- * Missing fields stay absent so existing clients keep today's ranking.
+ * Honba / riichi sticks / kyoku / flat table scores for push-vs-fold.
+ * Locked to Helper KAN-91 ({@code 9a6ee88}): {@code honba}, {@code riichi_sticks},
+ * {@code round_number} (kyoku within {@code round_wind}), {@code player_score},
+ * {@code right_score}/{@code opposite_score}/{@code left_score} aligned with
+ * {@code opponents[0..2]}. Omitted keys are unread; {@code 0} is valid when present.
  */
 public final class TableSituation {
 
     public static final TableSituation NONE = new TableSituation(
-            0, 0, 0, null, null, null, null, false, false, false);
+            0, 0, 0, null, null, null, null, null, false, false, false);
 
-    /** Fold when pressure reaches this (honba 3, or late first-place with a thin lead). */
+    /** Fold when pressure reaches this (honba 3, or South-4 first place with a thin lead). */
     static final int FOLD_THRESHOLD = 6;
 
     private final int honba;
     private final int riichiSticks;
     private final int roundNumber;
+    private final Wind roundWind;
     private final Integer playerScore;
     private final Integer rightScore;
     private final Integer oppositeScore;
@@ -34,6 +39,7 @@ public final class TableSituation {
             int honba,
             int riichiSticks,
             int roundNumber,
+            Wind roundWind,
             Integer playerScore,
             Integer rightScore,
             Integer oppositeScore,
@@ -45,6 +51,7 @@ public final class TableSituation {
         this.honba = honba;
         this.riichiSticks = riichiSticks;
         this.roundNumber = roundNumber;
+        this.roundWind = roundWind;
         this.playerScore = playerScore;
         this.rightScore = rightScore;
         this.oppositeScore = oppositeScore;
@@ -66,9 +73,9 @@ public final class TableSituation {
                 request.getRightScore(),
                 request.getOppositeScore(),
                 request.getLeftScore(),
-                request.getOpponentScores(),
                 request.getOpponents(),
-                request.getPlayer()
+                request.getPlayer(),
+                request.getRoundWind()
         );
     }
 
@@ -76,18 +83,17 @@ public final class TableSituation {
         if (request == null) {
             return NONE;
         }
-        Integer playerScore = request.getPlayerScore() > 0 ? request.getPlayerScore() : null;
         return from(
                 request.getHonba(),
                 request.getRiichiSticks(),
                 request.getRoundNumber(),
-                playerScore,
+                request.getPlayerScore(),
                 request.getRightScore(),
                 request.getOppositeScore(),
                 request.getLeftScore(),
-                request.getOpponentScores(),
                 request.getOpponents(),
-                request.getPlayer()
+                request.getPlayer(),
+                request.getRoundWind()
         );
     }
 
@@ -99,20 +105,14 @@ public final class TableSituation {
             Integer rightScore,
             Integer oppositeScore,
             Integer leftScore,
-            List<Integer> opponentScores,
             List<PlayerDiscardsDTO> opponents,
-            PlayerDiscardsDTO player
+            PlayerDiscardsDTO player,
+            Wind roundWind
     ) {
         boolean alreadyRiichi = player != null && player.isRiichi();
         boolean opponentRiichi = anyOpponentRiichi(opponents);
-        List<Integer> resolved = resolveOpponentScores(
-                opponentScores, opponents, rightScore, oppositeScore, leftScore);
-        Integer right = resolved.size() > 0 ? resolved.get(0) : rightScore;
-        Integer opposite = resolved.size() > 1 ? resolved.get(1) : oppositeScore;
-        Integer left = resolved.size() > 2 ? resolved.get(2) : leftScore;
-
         boolean present = honba != null || riichiSticks != null || roundNumber != null
-                || playerScore != null || right != null || opposite != null || left != null
+                || playerScore != null || rightScore != null || oppositeScore != null || leftScore != null
                 || alreadyRiichi;
         if (!present) {
             return NONE;
@@ -121,10 +121,11 @@ public final class TableSituation {
                 honba != null ? honba : 0,
                 riichiSticks != null ? riichiSticks : 0,
                 roundNumber != null ? roundNumber : 0,
+                roundWind,
                 playerScore,
-                right,
-                opposite,
-                left,
+                rightScore,
+                oppositeScore,
+                leftScore,
                 alreadyRiichi,
                 opponentRiichi,
                 true
@@ -141,6 +142,10 @@ public final class TableSituation {
 
     public int roundNumber() {
         return roundNumber;
+    }
+
+    public Wind roundWind() {
+        return roundWind;
     }
 
     public Integer playerScore() {
@@ -195,9 +200,9 @@ public final class TableSituation {
             return 0;
         }
         int pressure = honba * 2 + riichiSticks * 2;
-        if (roundNumber >= 8) {
+        if (isOras()) {
             pressure += 4;
-        } else if (roundNumber >= 7) {
+        } else if (isApproachingOras()) {
             pressure += 2;
         }
         if (opponentRiichi) {
@@ -285,12 +290,27 @@ public final class TableSituation {
         return others.get(0) - playerScore;
     }
 
+    /**
+     * {@code round_number} is kyoku within {@code round_wind} (typically 1–4), not a hanchan index.
+     * South 3+ / West / North count as late for place protection.
+     */
     public boolean isLateRound() {
-        return roundNumber >= 7;
+        return isOras() || isApproachingOras();
     }
 
     public boolean hasScores() {
         return playerScore != null && opponentScoreList().stream().anyMatch(s -> s != null);
+    }
+
+    private boolean isOras() {
+        if (roundWind == Wind.WEST || roundWind == Wind.NORTH) {
+            return true;
+        }
+        return roundWind == Wind.SOUTH && roundNumber >= 4;
+    }
+
+    private boolean isApproachingOras() {
+        return roundWind == Wind.SOUTH && roundNumber == 3;
     }
 
     private List<Integer> opponentScoreList() {
@@ -307,35 +327,5 @@ public final class TableSituation {
             }
         }
         return false;
-    }
-
-    /**
-     * Seat-relative: index 0 = right (shimocha), 1 = opposite, 2 = left (kamicha),
-     * matching Helper {@code opponents[]}.
-     */
-    static List<Integer> resolveOpponentScores(
-            List<Integer> opponentScores,
-            List<PlayerDiscardsDTO> opponents,
-            Integer rightScore,
-            Integer oppositeScore,
-            Integer leftScore
-    ) {
-        List<Integer> resolved = new ArrayList<>(3);
-        for (int i = 0; i < 3; i++) {
-            Integer fromList = opponentScores != null && i < opponentScores.size()
-                    ? opponentScores.get(i) : null;
-            Integer fromOpponent = null;
-            if (opponents != null && i < opponents.size() && opponents.get(i) != null) {
-                fromOpponent = opponents.get(i).getScore();
-            }
-            Integer fromFlat = switch (i) {
-                case 0 -> rightScore;
-                case 1 -> oppositeScore;
-                default -> leftScore;
-            };
-            Integer value = fromList != null ? fromList : fromOpponent != null ? fromOpponent : fromFlat;
-            resolved.add(value);
-        }
-        return resolved;
     }
 }

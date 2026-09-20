@@ -19,7 +19,7 @@ public class CallDecisionRequest {
     private CallType callType;
     private List<TileType> sequenceTiles;
     private boolean menzen;
-    private int playerScore;
+    private Integer playerScore;
     private boolean openKan;
     private List<PlayerDiscardsDTO> opponents;
 
@@ -38,14 +38,18 @@ public class CallDecisionRequest {
     /** Optional same shape as an opponents[] entry (pond + tsumogiri + melds + riichi). */
     private PlayerDiscardsDTO player;
 
-    /** Repeat counters and sticks (KAN-92). Absent means "not sent". */
+    /**
+     * Helper KAN-91 table meta (flat). {@code 0} is valid for honba/sticks when the key is
+     * present; omitted keys are unread.
+     */
     private Integer honba;
     private Integer riichiSticks;
+    /** Kyoku within {@code round_wind} (typically 1–4), not a hanchan-wide index. */
     private Integer roundNumber;
-
-    /** Seat-relative opponent scores aligned with opponents[]: right / opposite / left. */
+    /** {@code opponents[0]} (Right). */
     private Integer rightScore;
+    /** {@code opponents[1]} (Opposite). */
     private Integer oppositeScore;
+    /** {@code opponents[2]} (Left). */
     private Integer leftScore;
-    private List<Integer> opponentScores;
 }

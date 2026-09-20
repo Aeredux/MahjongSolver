@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -287,6 +289,31 @@ class MahjongControllerTest {
     }
 
     @Test
+    void tableMetaZeroHonbaIsKnownNotUnread() throws Exception {
+        String json = """
+            {
+              "honba": 0,
+              "riichi_sticks": 0,
+              "round_number": 1,
+              "round_wind": "EAST",
+              "player_score": 25000,
+              "right_score": 25000,
+              "opposite_score": 25000,
+              "left_score": 25000
+            }
+            """;
+        HandRequest request = objectMapper.readValue(json, HandRequest.class);
+        assertEquals(0, request.getHonba());
+        assertEquals(0, request.getRiichiSticks());
+        assertEquals(1, request.getRoundNumber());
+        assertEquals(25000, request.getPlayerScore());
+        assertEquals(25000, request.getRightScore());
+        assertEquals(25000, request.getOppositeScore());
+        assertEquals(25000, request.getLeftScore());
+        assertFalse(com.mahjong.service.TableSituation.from(request).preferDefense());
+    }
+
+    @Test
     void suggestMoveAcceptsHonbaAndTableScores() throws Exception {
         String body = """
             {
@@ -294,7 +321,8 @@ class MahjongControllerTest {
               "drawn_tile": "P7",
               "honba": 3,
               "riichi_sticks": 2,
-              "round_number": 8,
+              "round_number": 4,
+              "round_wind": "SOUTH",
               "player_score": 35000,
               "right_score": 28000,
               "opposite_score": 27000,
@@ -303,7 +331,6 @@ class MahjongControllerTest {
                 {
                   "wind": "SOUTH",
                   "riichi": true,
-                  "score": 28000,
                   "discards": [{"tile": "S5", "tsumogiri": false}]
                 }
               ]
@@ -329,7 +356,8 @@ class MahjongControllerTest {
               "player_score": 35000,
               "honba": 3,
               "riichi_sticks": 2,
-              "round_number": 8,
+              "round_number": 4,
+              "round_wind": "SOUTH",
               "right_score": 32000,
               "opposite_score": 28000,
               "left_score": 25000

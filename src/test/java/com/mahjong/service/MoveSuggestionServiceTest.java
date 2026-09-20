@@ -429,7 +429,7 @@ class MoveSuggestionServiceTest {
 
         List<MoveSuggestion> push = suggestionService.suggestMoves(hand, opponents);
         TableSituation foldTable = TableSituation.from(
-            3, 2, 8, 35000, 28000, 27000, 26000, null, opponents, null);
+            3, 2, 4, 35000, 28000, 27000, 26000, opponents, null, Wind.SOUTH);
         List<MoveSuggestion> fold = suggestionService.suggestMoves(
             hand, opponents, List.of(), null, null, List.of(), List.of(), foldTable);
 
@@ -466,7 +466,7 @@ class MoveSuggestionServiceTest {
         PlayerDiscardsDTO self = new PlayerDiscardsDTO();
         self.setRiichi(true);
         TableSituation already = TableSituation.from(
-            null, null, null, null, null, null, null, null, List.of(riichiRight), self);
+            null, null, null, null, null, null, null, List.of(riichiRight), self, null);
 
         List<MoveSuggestion> suggestions = suggestionService.suggestMoves(
             hand, List.of(riichiRight), List.of(), null, null, List.of(), List.of(), already);
