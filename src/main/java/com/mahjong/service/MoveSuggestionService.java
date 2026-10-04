@@ -97,6 +97,7 @@ public class MoveSuggestionService {
                 hand, safeOpponents, safeOwnDiscards, safeMelds, safeDora);
 
         boolean opponentInRiichi = tableMeta.opponentRiichi() || anyOpponentRiichi(safeOpponents);
+        boolean dangerBeforeOffense = tableMeta.rankDangerBeforeOffense() || opponentInRiichi;
         List<RankedSuggestion> ranked = new ArrayList<>();
         for (DiscardAnalysis analysis : analyses.values()) {
             int ukeire = DefenseHeuristics.ukeireCount(analysis.getAdvance(), defense.wallRemaining());
@@ -108,18 +109,23 @@ public class MoveSuggestionService {
             int yakuhaiKeep = yakuhaiKeepValue(analysis.getDiscard(), seatWind, roundWind);
             int doraKeep = doraKeepValue(analysis.getDiscard(), safeDora);
             int keepValue = yakuhaiKeep + doraKeep;
+            // Push only, and only when this discard does not worsen shanten.
+            // Safety.UNKNOWN sorts after every other tile in that bucket.
+            int unknownSimplePenalty = !dangerBeforeOffense
+                    && analysis.getShanten() == currentShanten
+                    && DefenseHeuristics.isUnknownSimple(analysis.getDiscard(), defense) ? 1 : 0;
 
             MoveSuggestion suggestion = new MoveSuggestion(analysis.getDiscard(), analysis.getShanten());
             suggestion.setUkeireCount(ukeire);
             suggestion.setConfidence(calculateConfidence(currentShanten, analysis.getShanten(), ukeire));
             suggestion.setReasoning(generateReasoning(
                     currentShanten, analysis, ukeire, goodShape, tileDefense, keepValue, defense, safeDora,
-                    tableMeta, opponentInRiichi));
+                    tableMeta, opponentInRiichi, unknownSimplePenalty > 0));
             ranked.add(new RankedSuggestion(
-                    suggestion, goodShape, tileDefense.dangerScore(), doraKeep, yakuhaiKeep));
+                    suggestion, goodShape, tileDefense.dangerScore(), doraKeep, yakuhaiKeep, unknownSimplePenalty));
         }
 
-        ranked.sort(rankComparator(tableMeta.rankDangerBeforeOffense() || anyOpponentRiichi(safeOpponents)));
+        ranked.sort(rankComparator(dangerBeforeOffense));
 
         List<MoveSuggestion> suggestions = ranked.stream()
                 .map(r -> r.suggestion)
@@ -130,9 +136,15 @@ public class MoveSuggestionService {
     }
 
     /**
-     * Push: min shanten → dora keep → ukeire → good-shape → defense → yakuhai.
+     * Push: min shanten → dora keep → untagged simple → ukeire → good-shape → defense → yakuhai.
+     * Untagged means {@link DefenseHeuristics.Safety#UNKNOWN}: no genbutsu, one-chance, kabe, or suji.
+     * That tile ranks after every other discard at the same shanten, including a terminal, an honor,
+     * and a simple that already has one of those tags. Ukeire still orders the tiles inside each group,
+     * so a tagged simple can still outrank a terminal. Putting only the untagged-vs-yaochu pair ahead of
+     * ukeire is not a valid sort while ukeire still orders two simples.
      * When {@code dangerBeforeOffense} (honba / South-4 / already riichi, or any opponent riichi):
      * min shanten → dora keep → defense → yakuhai → ukeire → good-shape.
+     * That opponent-riichi order is unchanged; shanten stays the first key in both orders.
      */
     static Comparator<RankedSuggestion> rankComparator(boolean dangerBeforeOffense) {
         Comparator<RankedSuggestion> byShanten = Comparator
@@ -144,10 +156,12 @@ public class MoveSuggestionService {
         Comparator<RankedSuggestion> byDefense = Comparator
                 .comparingInt((RankedSuggestion r) -> r.dangerScore)
                 .thenComparingInt(r -> r.yakuhaiKeep);
+        Comparator<RankedSuggestion> byUntaggedSimple = Comparator
+                .comparingInt((RankedSuggestion r) -> r.unknownSimplePenalty);
         if (dangerBeforeOffense) {
             return byShanten.thenComparing(byDefense).thenComparing(byOffense);
         }
-        return byShanten.thenComparing(byOffense).thenComparing(byDefense);
+        return byShanten.thenComparing(byUntaggedSimple).thenComparing(byOffense).thenComparing(byDefense);
     }
 
     private static boolean anyOpponentRiichi(List<PlayerDiscardsDTO> opponents) {
@@ -224,7 +238,8 @@ public class MoveSuggestionService {
             DefenseHeuristics.DefenseContext defense,
             List<TileType> dora,
             TableSituation table,
-            boolean opponentInRiichi
+            boolean opponentInRiichi,
+            boolean untaggedSimple
     ) {
         StringBuilder reasoning = new StringBuilder();
         int shantenAfterDiscard = analysis.getShanten();
@@ -284,6 +299,8 @@ public class MoveSuggestionService {
             reasoning.append("Fold: honba/scores — prefer safer discards. ");
         } else if (opponentInRiichi || table.opponentRiichi()) {
             reasoning.append("Opponent riichi — safer discards rank ahead of ukeire. ");
+        } else if (untaggedSimple) {
+            reasoning.append("Untagged simple — ranks after a terminal or honor at this shanten. ");
         }
 
         return reasoning.toString().trim();
@@ -326,7 +343,8 @@ public class MoveSuggestionService {
             int goodShape,
             int dangerScore,
             int doraKeep,
-            int yakuhaiKeep
+            int yakuhaiKeep,
+            int unknownSimplePenalty
     ) {
     }
 }
