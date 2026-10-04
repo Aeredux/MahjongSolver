@@ -573,6 +573,52 @@ class MoveSuggestionServiceTest {
     }
 
     @Test
+    void oneChanceSimpleRanksAfterTerminalOrHonorAtSameShanten() {
+        // 123m 456m 789p 11s 567p, plus a south pon of P2. Three P2s make P5
+        // one-chance (2 is the middle of 2-5-8) without putting P5 in the pond.
+        // P5 is still the higher-ukeire ryanmen. Today's order treats that
+        // one-chance mark as a safety tag and discards P5 ahead of S1.
+        PlayerDiscardsDTO south = p2Pon(false);
+        List<Tile> terminalHand = ryanmenVersusTanki(TileType.S1);
+        List<MoveSuggestion> quiet = suggestionService.suggestMoves(terminalHand, List.of(south));
+        MoveSuggestion p5 = find(quiet, TileType.P5);
+        assertTrue(p5.getReasoning().contains("One-chance"),
+            "The one-chance note stays; it is not a safety tag");
+        assertYaochuBeforeUntaggedSimple(quiet, TileType.S1, TileType.P5);
+
+        List<MoveSuggestion> honorQuiet = suggestionService.suggestMoves(
+            ryanmenVersusTanki(TileType.EAST), List.of(south));
+        MoveSuggestion honorP5 = find(honorQuiet, TileType.P5);
+        assertTrue(honorP5.getReasoning().contains("One-chance"));
+        assertYaochuBeforeUntaggedSimple(honorQuiet, TileType.EAST, TileType.P5);
+
+        int minShanten = quiet.stream().mapToInt(MoveSuggestion::getShantenAfterDiscard).min().orElseThrow();
+        assertEquals(minShanten, quiet.get(0).getShantenAfterDiscard(),
+            "One-chance demotion stays behind minimum shanten");
+        for (int i = 0; i < quiet.size() - 1; i++) {
+            assertTrue(quiet.get(i).getShantenAfterDiscard() <= quiet.get(i + 1).getShantenAfterDiscard());
+        }
+
+        // Opponent riichi keeps the danger-before-ukeire comparator. One-chance's
+        // old base-1 score would still discard P5 ahead of S1 on that path.
+        PlayerDiscardsDTO riichi = p2Pon(true);
+        TableSituation riichiTable = TableSituation.from(
+            0, 0, 1, 25000, 25000, 25000, 25000, List.of(riichi), null, Wind.EAST);
+        assertTrue(riichiTable.rankDangerBeforeOffense());
+        assertFalse(riichiTable.preferDefense());
+        assertFalse(riichiTable.skipNonImprovingCalls());
+        List<MoveSuggestion> defended = suggestionService.suggestMoves(
+            terminalHand, List.of(riichi), List.of(), null, null, List.of(), List.of(), riichiTable);
+        MoveSuggestion defendedP5 = find(defended, TileType.P5);
+        MoveSuggestion defendedS1 = find(defended, TileType.S1);
+        assertEquals(defendedP5.getShantenAfterDiscard(), defendedS1.getShantenAfterDiscard());
+        assertTrue(defendedP5.getUkeireCount() > defendedS1.getUkeireCount());
+        assertTrue(defendedP5.getReasoning().contains("One-chance"));
+        assertTrue(indexOf(defended, TileType.S1) < indexOf(defended, TileType.P5),
+            "Against riichi, a one-chance simple must not outrank a same-shanten terminal");
+    }
+
+    @Test
     void pushComparatorRanksUntaggedSimpleAfterSameShantenYaochu() {
         MoveSuggestion yaochu = new MoveSuggestion(TileType.S1, 0);
         yaochu.setUkeireCount(3);
@@ -622,6 +668,14 @@ class MoveSuggestionServiceTest {
         ranked.sort(MoveSuggestionService.rankComparator(true));
         assertEquals(TileType.P5, ranked.get(0).suggestion().getDiscardTile(),
             "Minimum shanten stays ahead of danger even when defense outranks ukeire and good-shape");
+    }
+
+    private static PlayerDiscardsDTO p2Pon(boolean riichi) {
+        return new PlayerDiscardsDTO(
+            Wind.SOUTH,
+            List.of(),
+            riichi,
+            List.of(new MeldDTO(MeldType.PON, List.of(TileType.P2, TileType.P2, TileType.P2))));
     }
 
     private static List<Tile> ryanmenVersusTanki(TileType tanki) {
