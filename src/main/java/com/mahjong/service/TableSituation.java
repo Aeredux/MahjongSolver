@@ -113,7 +113,7 @@ public final class TableSituation {
         boolean opponentRiichi = anyOpponentRiichi(opponents);
         boolean present = honba != null || riichiSticks != null || roundNumber != null
                 || playerScore != null || rightScore != null || oppositeScore != null || leftScore != null
-                || alreadyRiichi;
+                || alreadyRiichi || opponentRiichi;
         if (!present) {
             return NONE;
         }
@@ -178,6 +178,15 @@ public final class TableSituation {
 
     public boolean preferDefense() {
         return alreadyRiichi || foldPressure() >= FOLD_THRESHOLD;
+    }
+
+    /**
+     * Discard sort only. Danger moves ahead of ukeire and good-shape, still after shanten.
+     * A single opponent riichi does this without flipping {@link #preferDefense()}
+     * (honba, South-4 thin lead, and already-riichi still own damaten and skipped opens).
+     */
+    public boolean rankDangerBeforeOffense() {
+        return preferDefense() || opponentRiichi;
     }
 
     /**

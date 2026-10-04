@@ -68,6 +68,44 @@ class TableSituationTest {
     }
 
     @Test
+    void singleOpponentRiichiDoesNotCrossFoldThreshold() {
+        PlayerDiscardsDTO riichi = new PlayerDiscardsDTO();
+        riichi.setRiichi(true);
+        TableSituation table = TableSituation.from(
+                0, 0, 1, 25000, 25000, 25000, 25000, List.of(riichi), null, Wind.EAST);
+        assertTrue(table.opponentRiichi());
+        assertEquals(3, table.foldPressure());
+        assertFalse(table.preferDefense());
+        assertFalse(table.cautiousRiichi());
+        assertFalse(table.skipNonImprovingCalls());
+        assertTrue(table.rankDangerBeforeOffense());
+    }
+
+    @Test
+    void opponentRiichiAloneIsNotDropped() {
+        PlayerDiscardsDTO riichi = new PlayerDiscardsDTO();
+        riichi.setRiichi(true);
+        TableSituation table = TableSituation.from(
+                null, null, null, null, null, null, null, List.of(riichi), null, null);
+        assertTrue(table.present());
+        assertTrue(table.opponentRiichi());
+        assertEquals(3, table.foldPressure());
+        assertFalse(table.preferDefense());
+        assertTrue(table.rankDangerBeforeOffense());
+    }
+
+    @Test
+    void lastPlaceWithOpponentRiichiStillPushesCalls() {
+        PlayerDiscardsDTO riichi = new PlayerDiscardsDTO();
+        riichi.setRiichi(true);
+        TableSituation table = TableSituation.from(
+                0, 0, 1, 8000, 25000, 28000, 30000, List.of(riichi), null, Wind.EAST);
+        assertTrue(table.isLastPlace());
+        assertFalse(table.preferDefense());
+        assertTrue(table.rankDangerBeforeOffense());
+    }
+
+    @Test
     void alreadyRiichiPrefersDefenseWithoutHonba() {
         PlayerDiscardsDTO self = new PlayerDiscardsDTO();
         self.setRiichi(true);

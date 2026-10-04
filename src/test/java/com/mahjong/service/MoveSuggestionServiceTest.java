@@ -423,11 +423,13 @@ class MoveSuggestionServiceTest {
             new Tile(TileType.P5), new Tile(TileType.P6), new Tile(TileType.P7)
         );
         var s5Discard = new com.mahjong.dto.DiscardedTileDTO(TileType.S5, false);
+        PlayerDiscardsDTO openRight = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(s5Discard), false, List.of());
         PlayerDiscardsDTO riichiRight = new PlayerDiscardsDTO(
             Wind.SOUTH, List.of(s5Discard), true, List.of());
         List<PlayerDiscardsDTO> opponents = List.of(riichiRight);
 
-        List<MoveSuggestion> push = suggestionService.suggestMoves(hand, opponents);
+        List<MoveSuggestion> push = suggestionService.suggestMoves(hand, List.of(openRight));
         TableSituation foldTable = TableSituation.from(
             3, 2, 4, 35000, 28000, 27000, 26000, opponents, null, Wind.SOUTH);
         List<MoveSuggestion> fold = suggestionService.suggestMoves(
@@ -441,7 +443,7 @@ class MoveSuggestionServiceTest {
         assertTrue(pushP5.getUkeireCount() > pushS5.getUkeireCount(),
             "P5 must be the offensive (higher ukeire) discard vs tanki S5");
         assertTrue(indexOf(push, TileType.P5) < indexOf(push, TileType.S5),
-            "Without table meta, ukeire ranks the dangerous P5 ahead of genbutsu S5");
+            "With no opponent riichi and no fold, ukeire ranks the dangerous P5 ahead of genbutsu S5");
 
         assertTrue(foldTable.preferDefense());
         assertTrue(indexOf(fold, TileType.S5) < indexOf(fold, TileType.P5),
@@ -476,5 +478,89 @@ class MoveSuggestionServiceTest {
             "Already-riichi must prefer genbutsu over the higher-ukeire deal-in");
         assertTrue(suggestions.get(0).getReasoning().contains("Already riichi")
             || suggestions.stream().anyMatch(s -> s.getReasoning().contains("Already riichi")));
+    }
+
+    @Test
+    void opponentRiichiRanksDangerAheadOfUkeireWithoutFolding() {
+        // Same shape as the honba fold fixture. P5 is ryanmen (higher ukeire and good-shape);
+        // S5 is tanki genbutsu against the riichi pond. Old ranking keeps P5 first because
+        // one riichi adds only 3 fold pressure and the threshold is 6.
+        List<Tile> hand = tenpaiHonorsHand();
+        var s5Discard = new com.mahjong.dto.DiscardedTileDTO(TileType.S5, false);
+        PlayerDiscardsDTO riichiRight = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(s5Discard), true, List.of());
+        List<PlayerDiscardsDTO> opponents = List.of(riichiRight);
+
+        TableSituation quiet = TableSituation.from(
+            0, 0, 1, 25000, 25000, 25000, 25000, opponents, null, Wind.EAST);
+        assertEquals(3, quiet.foldPressure());
+        assertFalse(quiet.preferDefense());
+        assertFalse(quiet.cautiousRiichi());
+        assertFalse(quiet.skipNonImprovingCalls());
+        assertTrue(quiet.rankDangerBeforeOffense());
+
+        List<MoveSuggestion> defended = suggestionService.suggestMoves(
+            hand, opponents, List.of(), null, null, List.of(), List.of(), quiet);
+        assertDangerBeforeUkeire(defended);
+
+        List<MoveSuggestion> fromOpponentsOnly = suggestionService.suggestMoves(hand, opponents);
+        assertDangerBeforeUkeire(fromOpponentsOnly);
+    }
+
+    @Test
+    void lastPlaceOpponentRiichiStillRanksDangerFirst() {
+        List<Tile> hand = tenpaiHonorsHand();
+        var s5Discard = new com.mahjong.dto.DiscardedTileDTO(TileType.S5, false);
+        PlayerDiscardsDTO riichiRight = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(s5Discard), true, List.of());
+        TableSituation last = TableSituation.from(
+            0, 0, 1, 8000, 25000, 28000, 30000, List.of(riichiRight), null, Wind.EAST);
+        assertTrue(last.isLastPlace());
+        assertFalse(last.preferDefense(), "Last place still cancels fold pressure");
+        assertTrue(last.rankDangerBeforeOffense());
+
+        List<MoveSuggestion> suggestions = suggestionService.suggestMoves(
+            hand, List.of(riichiRight), List.of(), null, null, List.of(), List.of(), last);
+        assertDangerBeforeUkeire(suggestions);
+    }
+
+    @Test
+    void dangerBeforeOffenseStillYieldsToMinimumShanten() {
+        MoveSuggestion saferSlower = new MoveSuggestion(TileType.EAST, 2);
+        saferSlower.setUkeireCount(0);
+        MoveSuggestion dangerousFaster = new MoveSuggestion(TileType.P5, 0);
+        dangerousFaster.setUkeireCount(8);
+        var ranked = new java.util.ArrayList<>(List.of(
+            new MoveSuggestionService.RankedSuggestion(saferSlower, 0, 0, 0, 0),
+            new MoveSuggestionService.RankedSuggestion(dangerousFaster, 8, 12, 0, 0)
+        ));
+        ranked.sort(MoveSuggestionService.rankComparator(true));
+        assertEquals(TileType.P5, ranked.get(0).suggestion().getDiscardTile(),
+            "Minimum shanten stays ahead of danger even when defense outranks ukeire and good-shape");
+    }
+
+    private static List<Tile> tenpaiHonorsHand() {
+        return Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(TileType.S5), new Tile(TileType.S5),
+            new Tile(TileType.P5), new Tile(TileType.P6), new Tile(TileType.P7)
+        );
+    }
+
+    private static void assertDangerBeforeUkeire(List<MoveSuggestion> suggestions) {
+        MoveSuggestion p5 = suggestions.stream()
+            .filter(s -> s.getDiscardTile() == TileType.P5).findFirst().orElseThrow();
+        MoveSuggestion s5 = suggestions.stream()
+            .filter(s -> s.getDiscardTile() == TileType.S5).findFirst().orElseThrow();
+        assertEquals(p5.getShantenAfterDiscard(), s5.getShantenAfterDiscard());
+        assertTrue(p5.getUkeireCount() > s5.getUkeireCount(),
+            "P5 must stay the higher-ukeire ryanmen; the old sort would keep it first");
+        assertTrue(indexOf(suggestions, TileType.S5) < indexOf(suggestions, TileType.P5),
+            "Opponent riichi must rank genbutsu S5 ahead of higher-ukeire, better-shape P5");
+        int minShanten = suggestions.stream().mapToInt(MoveSuggestion::getShantenAfterDiscard).min().orElseThrow();
+        assertEquals(minShanten, suggestions.get(0).getShantenAfterDiscard());
+        assertTrue(s5.getReasoning().contains("Opponent riichi") || s5.getReasoning().contains("Genbutsu"));
     }
 }
