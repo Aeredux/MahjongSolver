@@ -17,16 +17,18 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Published riichi defense (genbutsu / suji / kabe / one-chance).
+ * Published riichi defense (genbutsu / suji / kabe).
  *
- * <p>Visible counts include Helper dora panel tiles and the caller's own open melds (KAN-89).
- * Nested {@code player.riichi} is consumed as already-riichi self-defense via {@link TableSituation}.
+ * <p>One-chance is still named in the reason when three copies are visible. It is not a
+ * safety class: it does not lower the danger score and it does not exempt a simple from
+ * the untagged-simple penalty (KAN-121). Visible counts include Helper dora panel tiles
+ * and the caller's own open melds (KAN-89). Nested {@code player.riichi} is consumed as
+ * already-riichi self-defense via {@link TableSituation}.
  */
 final class DefenseHeuristics {
 
     enum Safety {
         GENBUTSU,
-        ONE_CHANCE,
         KABE,
         SUJI,
         YAOCHU,
@@ -168,6 +170,7 @@ final class DefenseHeuristics {
         List<String> oneChanceAgainst = new ArrayList<>();
         List<String> kabeAgainst = new ArrayList<>();
         List<String> caution = new ArrayList<>();
+        boolean oneChance = isOneChance(tile, context.visibleCounts);
 
         for (OpponentRead opponent : context.opponents) {
             int threat = threatWeight(opponent);
@@ -178,7 +181,6 @@ final class DefenseHeuristics {
             String riichiTag = opponent.riichi ? " (riichi)" : "";
             switch (safety) {
                 case GENBUTSU -> genbutsuAgainst.add(who + riichiTag);
-                case ONE_CHANCE -> oneChanceAgainst.add(who + riichiTag);
                 case KABE -> kabeAgainst.add(who + riichiTag);
                 case SUJI -> sujiAgainst.add(who + riichiTag);
                 case UNKNOWN, YAOCHU -> {
@@ -188,6 +190,11 @@ final class DefenseHeuristics {
                                 : " (possible tenpai: " + opponent.tsumogiriStreak + " tsumogiri)"));
                     }
                 }
+            }
+            // A note only. Genbutsu already names that opponent; one-chance must not
+            // replace suji, kabe, or a terminal in the danger score.
+            if (oneChance && safety != Safety.GENBUTSU) {
+                oneChanceAgainst.add(who + riichiTag);
             }
         }
 
@@ -213,7 +220,7 @@ final class DefenseHeuristics {
     }
 
     /**
-     * A simple with no existing safety tag (genbutsu, one-chance, kabe, or suji).
+     * A simple with no safety tag (genbutsu, kabe, or suji). One-chance is not a safety tag.
      * Terminals and honors are not simples. With no opponents, every simple is untagged:
      * the empty-pond shortcut does not compute those tags.
      */
@@ -248,9 +255,6 @@ final class DefenseHeuristics {
         if (opponent.pond.contains(tile)) {
             return Safety.GENBUTSU;
         }
-        if (isOneChance(tile, visible)) {
-            return Safety.ONE_CHANCE;
-        }
         if (isKabeSafe(tile, visible)) {
             return Safety.KABE;
         }
@@ -279,7 +283,6 @@ final class DefenseHeuristics {
     private static int dangerPoints(Safety safety, int threat) {
         int base = switch (safety) {
             case GENBUTSU -> 0;
-            case ONE_CHANCE -> 1;
             case KABE -> 2;
             case SUJI -> 3;
             case YAOCHU -> 4;

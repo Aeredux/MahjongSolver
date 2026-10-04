@@ -111,6 +111,7 @@ public class MoveSuggestionService {
             int keepValue = yakuhaiKeep + doraKeep;
             // Push only, and only when this discard does not worsen shanten.
             // Safety.UNKNOWN sorts after every other tile in that bucket.
+            // One-chance is not one of those tags (KAN-121).
             int unknownSimplePenalty = !dangerBeforeOffense
                     && analysis.getShanten() == currentShanten
                     && DefenseHeuristics.isUnknownSimple(analysis.getDiscard(), defense) ? 1 : 0;
@@ -137,14 +138,18 @@ public class MoveSuggestionService {
 
     /**
      * Push: min shanten → dora keep → untagged simple → ukeire → good-shape → defense → yakuhai.
-     * Untagged means {@link DefenseHeuristics.Safety#UNKNOWN}: no genbutsu, one-chance, kabe, or suji.
-     * That tile ranks after every other discard at the same shanten, including a terminal, an honor,
-     * and a simple that already has one of those tags. Ukeire still orders the tiles inside each group,
-     * so a tagged simple can still outrank a terminal. Putting only the untagged-vs-yaochu pair ahead of
-     * ukeire is not a valid sort while ukeire still orders two simples.
+     * Untagged means {@link DefenseHeuristics.Safety#UNKNOWN}: no genbutsu, kabe, or suji.
+     * One-chance is not a safety tag, so a one-chance simple is untagged and does not sort safer
+     * than a terminal or honor. That tile ranks after every other discard at the same shanten,
+     * including a terminal, an honor, and a simple that already has genbutsu, suji, or kabe.
+     * Ukeire still orders the tiles inside each group, so a tagged simple can still outrank a terminal.
+     * Putting only the untagged-vs-yaochu pair ahead of ukeire is not a valid sort while ukeire still
+     * orders two simples.
      * When {@code dangerBeforeOffense} (honba / South-4 / already riichi, or any opponent riichi):
      * min shanten → dora keep → defense → yakuhai → ukeire → good-shape.
      * That opponent-riichi order is unchanged; shanten stays the first key in both orders.
+     * A one-chance simple scores as {@link DefenseHeuristics.Safety#UNKNOWN}, so the same
+     * danger key no longer places it ahead of a terminal, an honor, suji, or kabe.
      */
     static Comparator<RankedSuggestion> rankComparator(boolean dangerBeforeOffense) {
         Comparator<RankedSuggestion> byShanten = Comparator
