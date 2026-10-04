@@ -1,7 +1,10 @@
 package com.mahjong.service;
 
+import com.mahjong.dto.MeldDTO;
+import com.mahjong.model.MeldType;
 import com.mahjong.model.Tile;
 import com.mahjong.model.TileType;
+import mahjongutils.models.Furo;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -66,6 +69,27 @@ final class MahjongUtilsTiles {
             case GREEN -> "6z";
             case RED -> "7z";
         };
+    }
+
+    static Furo toFuro(MeldDTO meld) {
+        if (meld == null || meld.getTiles() == null || meld.getTiles().isEmpty()) {
+            return null;
+        }
+        List<mahjongutils.models.Tile> tiles = new ArrayList<>();
+        for (TileType type : meld.getTiles()) {
+            if (type != null) {
+                tiles.add(toLib(type));
+            }
+        }
+        if (tiles.size() < 3) {
+            return null;
+        }
+        boolean ankan = meld.getType() == MeldType.KAN_CLOSED;
+        try {
+            return MahjongUtilsInterop.parseFuro(tiles, ankan);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     static TileType fromLib(mahjongutils.models.Tile tile) {

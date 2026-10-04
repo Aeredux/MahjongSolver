@@ -88,9 +88,19 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>hand</code></td><td>array of TileType strings</td><td>Yes</td><td>Always 13 tiles in your closed hand. The drawn tile (if any) is provided separately via <code>drawn_tile</code>.</td></tr>
   <tr><td><code>drawn_tile</code></td><td>TileType string or null</td><td>No</td><td>The tile just drawn. Can be null. The suggestion engine evaluates all tiles in <code>hand</code>.</td></tr>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information. Enables discard-aware ukeire, defense ranking (genbutsu / suji / kabe / one-chance), and tsumogiri tenpai danger. See below.</td></tr>
-  <tr><td><code>discard_tiles</code></td><td>array or null</td><td>No</td><td>Caller's own pond (used for visible-tile ukeire). Helper does not send this yet — see KAN-54.</td></tr>
+  <tr><td><code>discard_tiles</code></td><td>array or null</td><td>No</td><td>Caller's own pond (used for visible-tile ukeire). If omitted, <code>player.discards</code> is used when present.</td></tr>
+  <tr><td><code>dora</code></td><td>array or null</td><td>No</td><td>Doman dora panel tiles as displayed — the panel tile <strong>is</strong> the dora (no Tenhou +1 remap). Counted as visible and kept on ranking ties.</td></tr>
+  <tr><td><code>melds</code></td><td>array or null</td><td>No</td><td>Caller's own open melds <code>{type, tiles[]}</code>. Used for open-hand shanten and visible counts.</td></tr>
+  <tr><td><code>player</code></td><td>object or null</td><td>No</td><td>Optional same shape as an <code>opponents[]</code> entry. <code>player.melds</code> / <code>player.discards</code> are used when top-level <code>melds</code> / <code>discard_tiles</code> are empty. Nested <code>player.riichi</code> is treated as already-riichi self-defense (fold / tsumogiri posture).</td></tr>
   <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. Used for yakuhai keep-value and call policy.</td></tr>
   <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. Used for yakuhai keep-value and call policy.</td></tr>
+  <tr><td><code>honba</code></td><td>int</td><td>No</td><td>Repeat counter. <strong>0 is valid</strong> when the key is present; omitted means unread. Raises fold pressure.</td></tr>
+  <tr><td><code>riichi_sticks</code></td><td>int</td><td>No</td><td>Riichi sticks on the table. <strong>0 is valid</strong> when known; omitted means unread.</td></tr>
+  <tr><td><code>round_number</code></td><td>int</td><td>No</td><td>Kyoku within <code>round_wind</code> (typically 1–4). South 4 is all last — not a hanchan-wide index.</td></tr>
+  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Own score (now on suggest-move as well as evaluate-call).</td></tr>
+  <tr><td><code>right_score</code></td><td>int</td><td>No</td><td>Score for <code>opponents[0]</code> (Right).</td></tr>
+  <tr><td><code>opposite_score</code></td><td>int</td><td>No</td><td>Score for <code>opponents[1]</code> (Opposite).</td></tr>
+  <tr><td><code>left_score</code></td><td>int</td><td>No</td><td>Score for <code>opponents[2]</code> (Left).</td></tr>
 </table>
 
 <h4>opponents[] Fields</h4>
@@ -209,11 +219,20 @@ with shanten values, ukeire counts, confidence scores, and reasoning.</p>
   <tr><td><code>call_type</code></td><td>string</td><td>Yes</td><td>One of: <code>CHI</code>, <code>PON</code>, <code>KAN</code>, <code>RON</code>, <code>RIICHI</code>, <code>TSUMO</code></td></tr>
   <tr><td><code>sequence_tiles</code></td><td>array of 2 TileType strings</td><td>CHI only</td><td>The two tiles in hand that form a sequence with <code>called_tile</code>. E.g. calling chi on M3 with M1M2 in hand: <code>["M1","M2"]</code>.</td></tr>
   <tr><td><code>menzen</code></td><td>boolean</td><td>No</td><td>Whether the hand is currently closed. Default: true.</td></tr>
-  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000). Default: 25000.</td></tr>
+  <tr><td><code>player_score</code></td><td>int</td><td>No</td><td>Player's current score. Used for riichi validation (needs &ge;1000) and table place. Omitted = unread (riichi check treats as 0).</td></tr>
+  <tr><td><code>honba</code></td><td>int</td><td>No</td><td>Repeat counter. 0 is valid when present.</td></tr>
+  <tr><td><code>riichi_sticks</code></td><td>int</td><td>No</td><td>Riichi sticks on the table. 0 is valid when present.</td></tr>
+  <tr><td><code>round_number</code></td><td>int</td><td>No</td><td>Kyoku within <code>round_wind</code> (typically 1–4).</td></tr>
+  <tr><td><code>right_score</code></td><td>int</td><td>No</td><td><code>opponents[0]</code> (Right).</td></tr>
+  <tr><td><code>opposite_score</code></td><td>int</td><td>No</td><td><code>opponents[1]</code> (Opposite).</td></tr>
+  <tr><td><code>left_score</code></td><td>int</td><td>No</td><td><code>opponents[2]</code> (Left).</td></tr>
   <tr><td><code>open_kan</code></td><td>boolean</td><td>No</td><td>Whether the kan would be open. Default: false.</td></tr>
   <tr><td><code>opponents</code></td><td>array or null</td><td>No</td><td>Per-opponent discard information (same format as suggest-move).</td></tr>
   <tr><td><code>seat_wind</code></td><td>string</td><td>No</td><td>Player's seat wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
   <tr><td><code>round_wind</code></td><td>string</td><td>No</td><td>Current round wind. One of: <code>EAST</code>, <code>SOUTH</code>, <code>WEST</code>, <code>NORTH</code></td></tr>
+  <tr><td><code>dora</code></td><td>array or null</td><td>No</td><td>Doman dora panel (tile as displayed). Used like yakuhai when deciding pon/chi/kan.</td></tr>
+  <tr><td><code>melds</code></td><td>array or null</td><td>No</td><td>Caller's own open melds, for open-hand shanten / winning checks.</td></tr>
+  <tr><td><code>player</code></td><td>object or null</td><td>No</td><td>Optional same shape as an opponents[] entry; <code>player.melds</code> fills in when top-level <code>melds</code> is empty.</td></tr>
 </table>
 
 <h4>CallType Values</h4>

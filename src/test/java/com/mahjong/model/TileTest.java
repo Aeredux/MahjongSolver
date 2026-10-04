@@ -120,4 +120,14 @@ class TileTest {
         Tile redTile = new Tile(TileType.M5, true);
         assertEquals("M5r", redTile.toString());
     }
+
+    @Test
+    void akaAliasesMapToCorrespondingFives() {
+        assertEquals(TileType.M5, TileType.fromJson("M0"));
+        assertEquals(TileType.P5, TileType.fromJson("P0"));
+        assertEquals(TileType.S5, TileType.fromJson("S0"));
+        assertEquals(TileType.M5, TileType.fromJson("M5"));
+        assertTrue(TileType.isAkaCode("M0"));
+        assertFalse(TileType.isAkaCode("M5"));
+    }
 }

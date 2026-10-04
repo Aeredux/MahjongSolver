@@ -1,5 +1,6 @@
 package com.mahjong.service;
 
+import com.mahjong.dto.MeldDTO;
 import com.mahjong.dto.PlayerDiscardsDTO;
 import com.mahjong.model.MoveSuggestion;
 import com.mahjong.model.Tile;
@@ -26,15 +27,18 @@ public class MoveSuggestionService {
     private ShantenCalculator shantenCalculator;
 
     public List<MoveSuggestion> suggestMoves(List<Tile> hand) {
-        return suggestMoves(hand, Collections.emptyList(), Collections.emptyList(), null, null);
+        return suggestMoves(hand, Collections.emptyList(), Collections.emptyList(), null, null,
+                Collections.emptyList(), Collections.emptyList());
     }
 
     public List<MoveSuggestion> suggestMoves(List<Tile> hand, List<PlayerDiscardsDTO> opponents) {
-        return suggestMoves(hand, opponents, Collections.emptyList(), null, null);
+        return suggestMoves(hand, opponents, Collections.emptyList(), null, null,
+                Collections.emptyList(), Collections.emptyList());
     }
 
     public List<MoveSuggestion> suggestMoves(List<Tile> hand, List<PlayerDiscardsDTO> opponents, List<TileType> ownDiscards) {
-        return suggestMoves(hand, opponents, ownDiscards, null, null);
+        return suggestMoves(hand, opponents, ownDiscards, null, null,
+                Collections.emptyList(), Collections.emptyList());
     }
 
     public List<MoveSuggestion> suggestMoves(
@@ -44,6 +48,33 @@ public class MoveSuggestionService {
             Wind seatWind,
             Wind roundWind
     ) {
+        return suggestMoves(hand, opponents, ownDiscards, seatWind, roundWind,
+                Collections.emptyList(), Collections.emptyList(), TableSituation.NONE);
+    }
+
+    public List<MoveSuggestion> suggestMoves(
+            List<Tile> hand,
+            List<PlayerDiscardsDTO> opponents,
+            List<TileType> ownDiscards,
+            Wind seatWind,
+            Wind roundWind,
+            List<MeldDTO> ownMelds,
+            List<TileType> dora
+    ) {
+        return suggestMoves(hand, opponents, ownDiscards, seatWind, roundWind, ownMelds, dora,
+                TableSituation.NONE);
+    }
+
+    public List<MoveSuggestion> suggestMoves(
+            List<Tile> hand,
+            List<PlayerDiscardsDTO> opponents,
+            List<TileType> ownDiscards,
+            Wind seatWind,
+            Wind roundWind,
+            List<MeldDTO> ownMelds,
+            List<TileType> dora,
+            TableSituation table
+    ) {
         if (hand == null || hand.isEmpty()) {
             logger.warn("Cannot suggest moves for empty hand");
             return Collections.emptyList();
@@ -51,15 +82,19 @@ public class MoveSuggestionService {
 
         logger.debug("Generating move suggestions for hand with {} tiles", hand.size());
 
-        Map<TileType, DiscardAnalysis> analyses = shantenCalculator.analyzeDiscards(hand);
+        List<MeldDTO> safeMelds = ownMelds != null ? ownMelds : Collections.emptyList();
+        List<TileType> safeDora = dora != null ? dora : Collections.emptyList();
+        TableSituation tableMeta = table != null ? table : TableSituation.NONE;
+        Map<TileType, DiscardAnalysis> analyses = shantenCalculator.analyzeDiscards(hand, safeMelds);
         int currentShanten = analyses.values().stream()
                 .mapToInt(DiscardAnalysis::getShanten)
                 .min()
-                .orElseGet(() -> shantenCalculator.calculateShanten(hand));
+                .orElseGet(() -> shantenCalculator.calculateShanten(hand, safeMelds));
 
         List<PlayerDiscardsDTO> safeOpponents = opponents != null ? opponents : Collections.emptyList();
         List<TileType> safeOwnDiscards = ownDiscards != null ? ownDiscards : Collections.emptyList();
-        DefenseHeuristics.DefenseContext defense = DefenseHeuristics.build(hand, safeOpponents, safeOwnDiscards);
+        DefenseHeuristics.DefenseContext defense = DefenseHeuristics.build(
+                hand, safeOpponents, safeOwnDiscards, safeMelds, safeDora);
 
         List<RankedSuggestion> ranked = new ArrayList<>();
         for (DiscardAnalysis analysis : analyses.values()) {
@@ -69,22 +104,21 @@ public class MoveSuggestionService {
                 goodShape = tenpaiWaitQuality(analysis.getAdvance());
             }
             DefenseHeuristics.TileDefense tileDefense = DefenseHeuristics.evaluate(analysis.getDiscard(), defense);
-            int keepValue = yakuhaiKeepValue(analysis.getDiscard(), seatWind, roundWind);
+            int yakuhaiKeep = yakuhaiKeepValue(analysis.getDiscard(), seatWind, roundWind);
+            int doraKeep = doraKeepValue(analysis.getDiscard(), safeDora);
+            int keepValue = yakuhaiKeep + doraKeep;
 
             MoveSuggestion suggestion = new MoveSuggestion(analysis.getDiscard(), analysis.getShanten());
             suggestion.setUkeireCount(ukeire);
             suggestion.setConfidence(calculateConfidence(currentShanten, analysis.getShanten(), ukeire));
             suggestion.setReasoning(generateReasoning(
-                    currentShanten, analysis, ukeire, goodShape, tileDefense, keepValue, defense));
-            ranked.add(new RankedSuggestion(suggestion, goodShape, tileDefense.dangerScore(), keepValue));
+                    currentShanten, analysis, ukeire, goodShape, tileDefense, keepValue, defense, safeDora,
+                    tableMeta));
+            ranked.add(new RankedSuggestion(
+                    suggestion, goodShape, tileDefense.dangerScore(), doraKeep, yakuhaiKeep));
         }
 
-        ranked.sort(Comparator
-                .comparingInt((RankedSuggestion r) -> r.suggestion.getShantenAfterDiscard())
-                .thenComparing(Comparator.comparingInt((RankedSuggestion r) -> r.suggestion.getUkeireCount()).reversed())
-                .thenComparing(Comparator.comparingInt((RankedSuggestion r) -> r.goodShape).reversed())
-                .thenComparingInt(r -> r.dangerScore)
-                .thenComparingInt(r -> r.keepValue));
+        ranked.sort(rankComparator(tableMeta.preferDefense()));
 
         List<MoveSuggestion> suggestions = ranked.stream()
                 .map(r -> r.suggestion)
@@ -92,6 +126,26 @@ public class MoveSuggestionService {
 
         logger.debug("Generated {} move suggestions", suggestions.size());
         return suggestions;
+    }
+
+    /**
+     * Push: min shanten → dora keep → ukeire → good-shape → defense → yakuhai.
+     * Fold: defense moves ahead of ukeire / good-shape when honba or scores warrant it.
+     */
+    static Comparator<RankedSuggestion> rankComparator(boolean preferDefense) {
+        Comparator<RankedSuggestion> byShanten = Comparator
+                .comparingInt((RankedSuggestion r) -> r.suggestion.getShantenAfterDiscard())
+                .thenComparingInt(r -> r.doraKeep);
+        Comparator<RankedSuggestion> byOffense = Comparator
+                .comparingInt((RankedSuggestion r) -> r.suggestion.getUkeireCount()).reversed()
+                .thenComparing(Comparator.comparingInt((RankedSuggestion r) -> r.goodShape).reversed());
+        Comparator<RankedSuggestion> byDefense = Comparator
+                .comparingInt((RankedSuggestion r) -> r.dangerScore)
+                .thenComparingInt(r -> r.yakuhaiKeep);
+        if (preferDefense) {
+            return byShanten.thenComparing(byDefense).thenComparing(byOffense);
+        }
+        return byShanten.thenComparing(byOffense).thenComparing(byDefense);
     }
 
     /**
@@ -120,6 +174,22 @@ public class MoveSuggestionService {
         return 0;
     }
 
+    /**
+     * Doman: the panel tile IS the dora (no Tenhou indicator +1). Sorts after
+     * shanten and before ukeire so a 1-copy panel does not make discarding dora "more efficient".
+     */
+    static int doraKeepValue(TileType tile, List<TileType> dora) {
+        if (tile == null || dora == null || dora.isEmpty()) {
+            return 0;
+        }
+        for (TileType indicator : dora) {
+            if (indicator == tile) {
+                return 3;
+            }
+        }
+        return 0;
+    }
+
     private double calculateConfidence(int currentShanten, int shantenAfterDiscard, int ukeire) {
         if (shantenAfterDiscard < currentShanten) {
             return 1.0;
@@ -137,7 +207,9 @@ public class MoveSuggestionService {
             int goodShape,
             DefenseHeuristics.TileDefense tileDefense,
             int keepValue,
-            DefenseHeuristics.DefenseContext defense
+            DefenseHeuristics.DefenseContext defense,
+            List<TileType> dora,
+            TableSituation table
     ) {
         StringBuilder reasoning = new StringBuilder();
         int shantenAfterDiscard = analysis.getShanten();
@@ -183,7 +255,18 @@ public class MoveSuggestionService {
         }
 
         if (keepValue > 0) {
-            reasoning.append("Yakuhai — prefer to keep if other discards are equal. ");
+            if (doraKeepValue(tileType, dora) > 0) {
+                reasoning.append("Dora — prefer to keep if other discards are equal. ");
+            }
+            if (keepValue > doraKeepValue(tileType, dora)) {
+                reasoning.append("Yakuhai — prefer to keep if other discards are equal. ");
+            }
+        }
+
+        if (table.alreadyRiichi()) {
+            reasoning.append("Already riichi — defensive / tsumogiri posture. ");
+        } else if (table.preferDefense()) {
+            reasoning.append("Fold: honba/scores — prefer safer discards. ");
         }
 
         return reasoning.toString().trim();
@@ -221,6 +304,12 @@ public class MoveSuggestionService {
         );
     }
 
-    private record RankedSuggestion(MoveSuggestion suggestion, int goodShape, int dangerScore, int keepValue) {
+    record RankedSuggestion(
+            MoveSuggestion suggestion,
+            int goodShape,
+            int dangerScore,
+            int doraKeep,
+            int yakuhaiKeep
+    ) {
     }
 }

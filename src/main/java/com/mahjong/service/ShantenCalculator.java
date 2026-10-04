@@ -1,11 +1,12 @@
 package com.mahjong.service;
 
+import com.mahjong.dto.MeldDTO;
 import com.mahjong.model.Tile;
 import com.mahjong.model.TileType;
+import mahjongutils.models.Furo;
 import mahjongutils.models.Tatsu;
 import mahjongutils.shanten.CommonShanten;
 import mahjongutils.shanten.FuroChanceShantenResult;
-import mahjongutils.shanten.ShantenKt;
 import mahjongutils.shanten.ShantenWithFuroChance;
 import mahjongutils.shanten.ShantenWithGot;
 import mahjongutils.shanten.ShantenWithoutGot;
@@ -31,12 +32,15 @@ public class ShantenCalculator {
     static final int MAX_SHANTEN = 8;
 
     public int calculateShanten(List<Tile> hand) {
+        return calculateShanten(hand, List.of());
+    }
+
+    public int calculateShanten(List<Tile> hand, List<MeldDTO> ownMelds) {
         if (hand == null || hand.isEmpty()) {
             return MAX_SHANTEN;
         }
         try {
-            UnionShantenResult result = ShantenKt.shanten(MahjongUtilsTiles.toLib(hand));
-            return result.getShantenInfo().getShantenNum();
+            return shanten(hand, ownMelds).getShantenInfo().getShantenNum();
         } catch (RuntimeException e) {
             logger.warn("mahjong-utils rejected hand of size {}: {}", hand.size(), e.getMessage());
             return MAX_SHANTEN;
@@ -44,12 +48,16 @@ public class ShantenCalculator {
     }
 
     public int calculateShantenAfterDiscard(List<Tile> hand, TileType discardType) {
+        return calculateShantenAfterDiscard(hand, discardType, List.of());
+    }
+
+    public int calculateShantenAfterDiscard(List<Tile> hand, TileType discardType, List<MeldDTO> ownMelds) {
         List<Tile> remaining = removeFirst(hand, discardType);
         if (remaining.size() == hand.size()) {
             logger.warn("Attempted to discard tile {} not in hand", discardType);
             return MAX_SHANTEN;
         }
-        return calculateShanten(remaining);
+        return calculateShanten(remaining, ownMelds);
     }
 
     public boolean isTenpai(List<Tile> hand) {
@@ -60,19 +68,28 @@ public class ShantenCalculator {
         return calculateShanten(hand) == -1;
     }
 
+    public boolean isWinning(List<Tile> hand, List<MeldDTO> ownMelds) {
+        return calculateShanten(hand, ownMelds) == -1;
+    }
+
     /**
      * Analyze every unique discard. For 3n+2 hands this is a single mahjong-utils call
      * ({@code ShantenWithGot.discardToAdvance}); otherwise each candidate is re-evaluated.
      */
     public Map<TileType, DiscardAnalysis> analyzeDiscards(List<Tile> hand) {
+        return analyzeDiscards(hand, List.of());
+    }
+
+    public Map<TileType, DiscardAnalysis> analyzeDiscards(List<Tile> hand, List<MeldDTO> ownMelds) {
         Map<TileType, DiscardAnalysis> analyses = new LinkedHashMap<>();
         if (hand == null || hand.isEmpty()) {
             return analyses;
         }
 
+        List<MeldDTO> furo = ownMelds != null ? ownMelds : List.of();
         if (hand.size() % 3 == 2) {
             try {
-                UnionShantenResult result = ShantenKt.shanten(MahjongUtilsTiles.toLib(hand));
+                UnionShantenResult result = shanten(hand, furo);
                 CommonShanten info = result.getShantenInfo();
                 if (info instanceof ShantenWithGot withGot) {
                     for (Map.Entry<mahjongutils.models.Tile, ShantenWithoutGot> entry :
@@ -92,18 +109,22 @@ public class ShantenCalculator {
             unique.add(tile.getType());
         }
         for (TileType discard : unique) {
-            analyses.put(discard, analyzeAfterDiscard(hand, discard));
+            analyses.put(discard, analyzeAfterDiscard(hand, discard, furo));
         }
         return analyses;
     }
 
     public DiscardAnalysis analyzeAfterDiscard(List<Tile> hand, TileType discardType) {
+        return analyzeAfterDiscard(hand, discardType, List.of());
+    }
+
+    public DiscardAnalysis analyzeAfterDiscard(List<Tile> hand, TileType discardType, List<MeldDTO> ownMelds) {
         List<Tile> remaining = removeFirst(hand, discardType);
         if (remaining.size() == hand.size()) {
             return new DiscardAnalysis(discardType, MAX_SHANTEN, Set.of(), Set.of());
         }
         try {
-            UnionShantenResult result = ShantenKt.shanten(MahjongUtilsTiles.toLib(remaining));
+            UnionShantenResult result = shanten(remaining, ownMelds);
             CommonShanten info = result.getShantenInfo();
             if (info instanceof ShantenWithoutGot withoutGot) {
                 return toAnalysis(discardType, withoutGot);
@@ -153,6 +174,11 @@ public class ShantenCalculator {
             logger.debug("furoChanceShanten unavailable for {}: {}", chanceTile, e.getMessage());
             return FuroChanceAnalysis.unavailable();
         }
+    }
+
+    private static UnionShantenResult shanten(List<Tile> hand, List<MeldDTO> ownMelds) {
+        List<Furo> furo = MahjongUtilsInterop.toFuroList(ownMelds);
+        return MahjongUtilsInterop.shanten(MahjongUtilsTiles.toLib(hand), furo);
     }
 
     private static DiscardAnalysis toAnalysis(TileType discard, ShantenWithoutGot after) {
