@@ -442,8 +442,9 @@ class MoveSuggestionServiceTest {
         assertEquals(pushP5.getShantenAfterDiscard(), pushS5.getShantenAfterDiscard());
         assertTrue(pushP5.getUkeireCount() > pushS5.getUkeireCount(),
             "P5 must be the offensive (higher ukeire) discard vs tanki S5");
-        assertTrue(indexOf(push, TileType.P5) < indexOf(push, TileType.S5),
-            "With no opponent riichi and no fold, ukeire ranks the dangerous P5 ahead of genbutsu S5");
+        assertTrue(pushP5.getReasoning().contains("Untagged simple"));
+        assertTrue(indexOf(push, TileType.S5) < indexOf(push, TileType.P5),
+            "P5 has no safety tag, so it ranks after genbutsu S5 even though ukeire is higher and nobody is riichi");
 
         assertTrue(foldTable.preferDefense());
         assertTrue(indexOf(fold, TileType.S5) < indexOf(fold, TileType.P5),
@@ -525,18 +526,134 @@ class MoveSuggestionServiceTest {
     }
 
     @Test
+    void unknownSimpleRanksAfterTerminalOrHonorAtSameShanten() {
+        // 123m 456m 789p 11s 567p. Discarding P5 or P7 leaves a ryanmen tenpai
+        // (higher ukeire). Discarding S1 leaves a tanki. Nobody is riichi, so the
+        // old sort throws the untagged simple first.
+        List<Tile> terminalHand = ryanmenVersusTanki(TileType.S1);
+        List<MoveSuggestion> quiet = suggestionService.suggestMoves(terminalHand);
+        assertYaochuBeforeUntaggedSimple(quiet, TileType.S1, TileType.P5);
+        assertYaochuBeforeUntaggedSimple(quiet, TileType.S1, TileType.P7);
+
+        List<MoveSuggestion> honorQuiet = suggestionService.suggestMoves(ryanmenVersusTanki(TileType.EAST));
+        assertYaochuBeforeUntaggedSimple(honorQuiet, TileType.EAST, TileType.P5);
+        assertYaochuBeforeUntaggedSimple(honorQuiet, TileType.EAST, TileType.P7);
+
+        int minShanten = quiet.stream().mapToInt(MoveSuggestion::getShantenAfterDiscard).min().orElseThrow();
+        assertEquals(minShanten, quiet.get(0).getShantenAfterDiscard(),
+            "Untagged-simple demotion stays behind minimum shanten");
+        for (int i = 0; i < quiet.size() - 1; i++) {
+            assertTrue(quiet.get(i).getShantenAfterDiscard() <= quiet.get(i + 1).getShantenAfterDiscard());
+        }
+
+        // P7 in the pond is genbutsu (a safety tag the danger score already computes).
+        // It keeps its ukeire rank. Untagged P5 still follows the terminal.
+        var p7Discard = new com.mahjong.dto.DiscardedTileDTO(TileType.P7, false);
+        PlayerDiscardsDTO openRight = new PlayerDiscardsDTO(
+            Wind.SOUTH, List.of(p7Discard), false, List.of());
+        TableSituation quietTable = TableSituation.from(
+            0, 0, 1, 25000, 25000, 25000, 25000, List.of(openRight), null, Wind.EAST);
+        assertFalse(quietTable.opponentRiichi());
+        assertFalse(quietTable.preferDefense());
+        assertFalse(quietTable.rankDangerBeforeOffense());
+        assertFalse(quietTable.skipNonImprovingCalls());
+
+        List<MoveSuggestion> tagged = suggestionService.suggestMoves(
+            terminalHand, List.of(openRight), List.of(), null, null, List.of(), List.of(), quietTable);
+        MoveSuggestion taggedP7 = find(tagged, TileType.P7);
+        MoveSuggestion taggedS1 = find(tagged, TileType.S1);
+        assertEquals(taggedP7.getShantenAfterDiscard(), taggedS1.getShantenAfterDiscard());
+        assertTrue(taggedP7.getUkeireCount() > taggedS1.getUkeireCount());
+        assertTrue(taggedP7.getReasoning().contains("Genbutsu"));
+        assertFalse(taggedP7.getReasoning().contains("Untagged simple"),
+            "A genbutsu simple is not an untagged simple");
+        assertTrue(indexOf(tagged, TileType.P7) < indexOf(tagged, TileType.S1),
+            "A tagged simple still outranks a terminal on ukeire when nobody is riichi");
+        assertYaochuBeforeUntaggedSimple(tagged, TileType.S1, TileType.P5);
+    }
+
+    @Test
+    void pushComparatorRanksUntaggedSimpleAfterSameShantenYaochu() {
+        MoveSuggestion yaochu = new MoveSuggestion(TileType.S1, 0);
+        yaochu.setUkeireCount(3);
+        MoveSuggestion simple = new MoveSuggestion(TileType.P7, 0);
+        simple.setUkeireCount(7);
+        var ranked = new java.util.ArrayList<>(List.of(
+            new MoveSuggestionService.RankedSuggestion(simple, 7, 6, 0, 0, 1),
+            new MoveSuggestionService.RankedSuggestion(yaochu, 0, 4, 0, 0, 0)
+        ));
+        ranked.sort(MoveSuggestionService.rankComparator(false));
+        assertEquals(TileType.S1, ranked.get(0).suggestion().getDiscardTile(),
+            "Old push order sorts ukeire ahead of danger and would discard P7");
+
+        MoveSuggestion slowerTerminal = new MoveSuggestion(TileType.M9, 1);
+        slowerTerminal.setUkeireCount(0);
+        var shantenFirst = new java.util.ArrayList<>(List.of(
+            new MoveSuggestionService.RankedSuggestion(slowerTerminal, 0, 4, 0, 0, 0),
+            new MoveSuggestionService.RankedSuggestion(simple, 7, 6, 0, 0, 1)
+        ));
+        shantenFirst.sort(MoveSuggestionService.rankComparator(false));
+        assertEquals(TileType.P7, shantenFirst.get(0).suggestion().getDiscardTile(),
+            "Untagged-simple penalty stays behind minimum shanten");
+
+        MoveSuggestion saferSimple = new MoveSuggestion(TileType.P7, 0);
+        saferSimple.setUkeireCount(3);
+        MoveSuggestion widerYaochu = new MoveSuggestion(TileType.S1, 0);
+        widerYaochu.setUkeireCount(8);
+        var riichiOrder = new java.util.ArrayList<>(List.of(
+            new MoveSuggestionService.RankedSuggestion(widerYaochu, 0, 4, 0, 0, 0),
+            new MoveSuggestionService.RankedSuggestion(saferSimple, 0, 0, 0, 0, 1)
+        ));
+        riichiOrder.sort(MoveSuggestionService.rankComparator(true));
+        assertEquals(TileType.P7, riichiOrder.get(0).suggestion().getDiscardTile(),
+            "Opponent-riichi order still sorts danger ahead of ukeire and ignores the push-only penalty");
+    }
+
+    @Test
     void dangerBeforeOffenseStillYieldsToMinimumShanten() {
         MoveSuggestion saferSlower = new MoveSuggestion(TileType.EAST, 2);
         saferSlower.setUkeireCount(0);
         MoveSuggestion dangerousFaster = new MoveSuggestion(TileType.P5, 0);
         dangerousFaster.setUkeireCount(8);
         var ranked = new java.util.ArrayList<>(List.of(
-            new MoveSuggestionService.RankedSuggestion(saferSlower, 0, 0, 0, 0),
-            new MoveSuggestionService.RankedSuggestion(dangerousFaster, 8, 12, 0, 0)
+            new MoveSuggestionService.RankedSuggestion(saferSlower, 0, 0, 0, 0, 0),
+            new MoveSuggestionService.RankedSuggestion(dangerousFaster, 8, 12, 0, 0, 0)
         ));
         ranked.sort(MoveSuggestionService.rankComparator(true));
         assertEquals(TileType.P5, ranked.get(0).suggestion().getDiscardTile(),
             "Minimum shanten stays ahead of danger even when defense outranks ukeire and good-shape");
+    }
+
+    private static List<Tile> ryanmenVersusTanki(TileType tanki) {
+        return Arrays.asList(
+            new Tile(TileType.M1), new Tile(TileType.M2), new Tile(TileType.M3),
+            new Tile(TileType.M4), new Tile(TileType.M5), new Tile(TileType.M6),
+            new Tile(TileType.P7), new Tile(TileType.P8), new Tile(TileType.P9),
+            new Tile(tanki), new Tile(tanki),
+            new Tile(TileType.P5), new Tile(TileType.P6), new Tile(TileType.P7)
+        );
+    }
+
+    private static void assertYaochuBeforeUntaggedSimple(
+            List<MoveSuggestion> suggestions,
+            TileType yaochu,
+            TileType simple
+    ) {
+        MoveSuggestion safe = find(suggestions, yaochu);
+        MoveSuggestion risky = find(suggestions, simple);
+        assertEquals(safe.getShantenAfterDiscard(), risky.getShantenAfterDiscard());
+        assertTrue(risky.getUkeireCount() > safe.getUkeireCount(),
+            simple + " must have more ukeire than " + yaochu + "; the old sort would keep the simple first");
+        assertTrue(indexOf(suggestions, yaochu) < indexOf(suggestions, simple),
+            "Untagged " + simple + " must rank after " + yaochu + " at the same shanten when nobody is riichi");
+        assertTrue(risky.getReasoning().contains("Untagged simple"));
+    }
+
+    private static MoveSuggestion find(List<MoveSuggestion> suggestions, TileType tile) {
+        return suggestions.stream()
+            .filter(s -> s.getDiscardTile() == tile)
+            .findFirst()
+            .orElseThrow();
     }
 
     private static List<Tile> tenpaiHonorsHand() {

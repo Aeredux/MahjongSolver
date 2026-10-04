@@ -63,4 +63,24 @@ class DefenseHeuristicsTest {
         assertTrue(DefenseHeuristics.evaluate(TileType.EAST, ctx).notes().stream()
             .anyMatch(n -> n.contains("Genbutsu")));
     }
+
+    @Test
+    void unknownSimpleIsAnUntaggedSimpleOnly() {
+        List<Tile> hand = List.of(new Tile(TileType.P5), new Tile(TileType.S1), new Tile(TileType.EAST));
+        DefenseHeuristics.DefenseContext noOpponents = DefenseHeuristics.build(hand, List.of(), List.of());
+        assertTrue(DefenseHeuristics.isUnknownSimple(TileType.P5, noOpponents));
+        assertFalse(DefenseHeuristics.isUnknownSimple(TileType.S1, noOpponents));
+        assertFalse(DefenseHeuristics.isUnknownSimple(TileType.EAST, noOpponents));
+
+        PlayerDiscardsDTO south = new PlayerDiscardsDTO(
+            Wind.SOUTH,
+            List.of(new DiscardedTileDTO(TileType.P7, false), new DiscardedTileDTO(TileType.M4, false)),
+            false,
+            List.of());
+        DefenseHeuristics.DefenseContext ctx = DefenseHeuristics.build(hand, List.of(south), List.of());
+        assertFalse(DefenseHeuristics.isUnknownSimple(TileType.P7, ctx), "Pond P7 is genbutsu");
+        assertFalse(DefenseHeuristics.isUnknownSimple(TileType.M7, ctx), "M4 in the pond makes M7 suji");
+        assertTrue(DefenseHeuristics.isUnknownSimple(TileType.P5, ctx));
+        assertFalse(DefenseHeuristics.isUnknownSimple(TileType.S1, ctx));
+    }
 }

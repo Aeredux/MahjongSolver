@@ -154,7 +154,7 @@ Tiles are represented using the following notation:
 
 ## AI Strategy
 
-Discard ranking (KAN-51 / KAN-89) is **min shanten → dora keep → ukeire → good-shape → defense → yakuhai**. Defense moves ahead of ukeire and good-shape (still after minimum shanten and dora keep) when a fold is warranted (KAN-92) or when any opponent is in riichi (KAN-119). One opponent riichi does not by itself damaten or skip opens.
+Discard ranking (KAN-51 / KAN-89 / KAN-120) is **min shanten → dora keep → untagged simple → ukeire → good-shape → defense → yakuhai** when nobody is riichi and the hand is not folding. Untagged means the existing danger class `UNKNOWN` (no genbutsu, suji, kabe, or one-chance). That simple ranks after every other same-shanten discard, including a terminal, an honor, and a simple that already has one of those tags. Ukeire still orders tiles inside each group, so a tagged simple can outrank a terminal. Defense moves ahead of ukeire and good-shape (still after minimum shanten and dora keep) when a fold is warranted (KAN-92) or when any opponent is in riichi (KAN-119). One opponent riichi does not by itself damaten or skip opens.
 
 1. **Shanten / ukeire / good-shape**: [mahjong-utils](https://github.com/ssttkkl/mahjong-utils) (MIT) replaces the homemade calculator
 2. **Defense**: genbutsu vs every pond, plus suji / kabe / one-chance — these change sort order, not just the reasoning string

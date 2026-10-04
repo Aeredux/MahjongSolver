@@ -212,6 +212,26 @@ final class DefenseHeuristics {
         return new TileDefense(danger, notes);
     }
 
+    /**
+     * A simple with no existing safety tag (genbutsu, one-chance, kabe, or suji).
+     * Terminals and honors are not simples. With no opponents, every simple is untagged:
+     * the empty-pond shortcut does not compute those tags.
+     */
+    static boolean isUnknownSimple(TileType tile, DefenseContext context) {
+        if (tile == null || !tile.isSimple()) {
+            return false;
+        }
+        if (context.opponents.isEmpty()) {
+            return true;
+        }
+        for (OpponentRead opponent : context.opponents) {
+            if (classify(tile, opponent, context.visibleCounts) != Safety.UNKNOWN) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     static int countRemaining(TileType type, Map<TileType, Integer> wallRemaining) {
         return wallRemaining.getOrDefault(type, 0);
     }
