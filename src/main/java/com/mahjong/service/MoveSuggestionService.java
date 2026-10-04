@@ -96,6 +96,7 @@ public class MoveSuggestionService {
         DefenseHeuristics.DefenseContext defense = DefenseHeuristics.build(
                 hand, safeOpponents, safeOwnDiscards, safeMelds, safeDora);
 
+        boolean opponentInRiichi = tableMeta.opponentRiichi() || anyOpponentRiichi(safeOpponents);
         List<RankedSuggestion> ranked = new ArrayList<>();
         for (DiscardAnalysis analysis : analyses.values()) {
             int ukeire = DefenseHeuristics.ukeireCount(analysis.getAdvance(), defense.wallRemaining());
@@ -113,12 +114,12 @@ public class MoveSuggestionService {
             suggestion.setConfidence(calculateConfidence(currentShanten, analysis.getShanten(), ukeire));
             suggestion.setReasoning(generateReasoning(
                     currentShanten, analysis, ukeire, goodShape, tileDefense, keepValue, defense, safeDora,
-                    tableMeta));
+                    tableMeta, opponentInRiichi));
             ranked.add(new RankedSuggestion(
                     suggestion, goodShape, tileDefense.dangerScore(), doraKeep, yakuhaiKeep));
         }
 
-        ranked.sort(rankComparator(tableMeta.preferDefense()));
+        ranked.sort(rankComparator(tableMeta.rankDangerBeforeOffense() || anyOpponentRiichi(safeOpponents)));
 
         List<MoveSuggestion> suggestions = ranked.stream()
                 .map(r -> r.suggestion)
@@ -130,9 +131,10 @@ public class MoveSuggestionService {
 
     /**
      * Push: min shanten → dora keep → ukeire → good-shape → defense → yakuhai.
-     * Fold: defense moves ahead of ukeire / good-shape when honba or scores warrant it.
+     * When {@code dangerBeforeOffense} (honba / South-4 / already riichi, or any opponent riichi):
+     * min shanten → dora keep → defense → yakuhai → ukeire → good-shape.
      */
-    static Comparator<RankedSuggestion> rankComparator(boolean preferDefense) {
+    static Comparator<RankedSuggestion> rankComparator(boolean dangerBeforeOffense) {
         Comparator<RankedSuggestion> byShanten = Comparator
                 .comparingInt((RankedSuggestion r) -> r.suggestion.getShantenAfterDiscard())
                 .thenComparingInt(r -> r.doraKeep);
@@ -142,10 +144,22 @@ public class MoveSuggestionService {
         Comparator<RankedSuggestion> byDefense = Comparator
                 .comparingInt((RankedSuggestion r) -> r.dangerScore)
                 .thenComparingInt(r -> r.yakuhaiKeep);
-        if (preferDefense) {
+        if (dangerBeforeOffense) {
             return byShanten.thenComparing(byDefense).thenComparing(byOffense);
         }
         return byShanten.thenComparing(byOffense).thenComparing(byDefense);
+    }
+
+    private static boolean anyOpponentRiichi(List<PlayerDiscardsDTO> opponents) {
+        if (opponents == null) {
+            return false;
+        }
+        for (PlayerDiscardsDTO opponent : opponents) {
+            if (opponent != null && opponent.isRiichi()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -209,7 +223,8 @@ public class MoveSuggestionService {
             int keepValue,
             DefenseHeuristics.DefenseContext defense,
             List<TileType> dora,
-            TableSituation table
+            TableSituation table,
+            boolean opponentInRiichi
     ) {
         StringBuilder reasoning = new StringBuilder();
         int shantenAfterDiscard = analysis.getShanten();
@@ -267,6 +282,8 @@ public class MoveSuggestionService {
             reasoning.append("Already riichi — defensive / tsumogiri posture. ");
         } else if (table.preferDefense()) {
             reasoning.append("Fold: honba/scores — prefer safer discards. ");
+        } else if (opponentInRiichi || table.opponentRiichi()) {
+            reasoning.append("Opponent riichi — safer discards rank ahead of ukeire. ");
         }
 
         return reasoning.toString().trim();
